@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Card Catalog — Task Drawer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Caveat:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --wood: #3c2a1e;
+    --wood-dark: #2a1c13;
+    --kraft: #cfae7c;
+    --kraft-line: #b8935c;
+    --kraft-shadow: #a17f4d;
+    --ink: #2b2b28;
+    --ink-soft: #5b5347;
+    --stamp-red: #a33a3a;
+    --tab-urgent: #a33a3a;
+    --tab-normal: #6b7f5e;
+    --tab-low: #4a6a8a;
+    --paper-bg: #e8dcc0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--wood);
+    background-image:
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.06) 0 2px, transparent 2px 60px),
+      radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent 55%);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    padding: 30px 16px 70px;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; }
+
+  /* ---------------- Nameplate ---------------- */
+  .nameplate {
+    text-align: center;
+    margin-bottom: 26px;
+  }
+  .nameplate .plate {
+    display: inline-block;
+    background: linear-gradient(180deg, #e9d9a8, #cbb27a);
+    border: 3px solid var(--wood-dark);
+    border-radius: 4px;
+    padding: 10px 28px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+  }
+  .nameplate h1 {
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    font-size: clamp(18px, 4vw, 26px);
+    letter-spacing: 3px;
+    margin: 0;
+    color: var(--wood-dark);
+  }
+  .nameplate .sub {
+    font-family: 'Courier Prime', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* ---------------- Input row ---------------- */
+  .input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    background: var(--paper-bg);
+    border: 2px solid var(--wood-dark);
+    border-radius: 6px;
+    padding: 14px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  }
+
+  .input-row input[type="text"] {
+    flex: 1 1 260px;
+    min-width: 0;
+    font-family: 'Courier Prime', monospace;
+    font-size: 15px;
+    padding: 10px 12px;
+    border: 1.5px dashed var(--kraft-shadow);
+    border-radius: 3px;
+    background: #fdf8ea;
+    color: var(--ink);
+  }
+  .input-row input[type="text"]:focus {
+    outline: 2px solid var(--tab-normal);
+    outline-offset: 1px;
+  }
+
+  select#prioritySelect {
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    padding: 10px 8px;
+    border-radius: 3px;
+    border: 1.5px solid var(--kraft-shadow);
+    background: #fdf8ea;
+    color: var(--ink);
+  }
+
+  button {
+    font-family: 'Courier Prime', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    border: none;
+    border-radius: 3px;
+    padding: 11px 20px;
+    cursor: pointer;
+  }
+  button:focus-visible { outline: 3px solid var(--tab-normal); outline-offset: 2px; }
+
+  #addBtn {
+    background: var(--wood-dark);
+    color: #f0e4c8;
+    box-shadow: 0 3px 0 #1c1209;
+    transition: transform 0.08s ease;
+  }
+  #addBtn:active { transform: translateY(3px); box-shadow: none; }
+
+  /* ---------------- Drawer sections ---------------- */
+  .drawer-label {
+    font-family: 'Courier Prime', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #e9d9a8;
+    margin: 22px 4px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .drawer-label .count {
+    background: rgba(255,255,255,0.12);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    position: relative;
+    background:
+      repeating-linear-gradient(var(--paper-bg) 0 27px, var(--kraft-line) 27px 28px);
+    background-color: var(--paper-bg);
+    border-radius: 3px;
+    padding: 18px 16px 16px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    min-height: 110px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transform: rotate(var(--tilt, 0deg));
+  }
+
+  .card::before {
+    /* torn top edge */
+    content: "";
+    position: absolute;
+    top: -1px; left: 0; right: 0;
+    height: 5px;
+    background: repeating-linear-gradient(110deg, transparent 0 6px, rgba(0,0,0,0.12) 6px 7px);
+  }
+
+  .card .tab {
+    position: absolute;
+    top: -8px;
+    left: 14px;
+    width: 34px;
+    height: 12px;
+    border-radius: 2px 2px 0 0;
+  }
+  .card .tab.urgent { background: var(--tab-urgent); }
+  .card .tab.normal { background: var(--tab-normal); }
+  .card .tab.low { background: var(--tab-low); }
+
+  .card .text {
+    font-family: 'Courier Prime', monospace;
+    font-size: 14.5px;
+    line-height: 27px;
+    color: var(--ink);
+    word-break: break-word;
+    margin-top: 4px;
+  }
+
+  .card .card-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+  }
+
+  .card .file-btn {
+    background: var(--tab-normal);
+    color: #fbf7ec;
+    font-size: 11px;
+    padding: 7px 12px;
+    box-shadow: 0 2px 0 #4a5a40;
+  }
+  .card .file-btn:active { transform: translateY(2px); box-shadow: none; }
+
+  .card .delete-btn {
+    background: none;
+    color: var(--ink-soft);
+    font-size: 16px;
+    padding: 4px 8px;
+    line-height: 1;
+  }
+  .card .delete-btn:hover { color: var(--stamp-red); }
+
+  /* ---------------- Filed (completed) cards ---------------- */
+  .filed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filed-card {
+    position: relative;
+    background: var(--paper-bg);
+    opacity: 0.75;
+    border-radius: 3px;
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  }
+  .filed-card .text {
+    font-family: 'Courier Prime', monospace;
+    font-size: 13.5px;
+    text-decoration: line-through;
+    color: var(--ink-soft);
+  }
+  .stamp {
+    font-family: 'Caveat', cursive;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--stamp-red);
+    border: 3px solid var(--stamp-red);
+    border-radius: 6px;
+    padding: 0 8px;
+    transform: rotate(-8deg);
+    display: inline-block;
+    opacity: 0.85;
+    flex-shrink: 0;
+    margin-left: 12px;
+  }
+
+  .empty-note {
+    font-family: 'Courier Prime', monospace;
+    font-size: 13px;
+    color: #cbb693;
+    text-align: center;
+    padding: 20px 10px;
+    font-style: italic;
+  }
+
+  .footer-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+  }
+  .footer-row button {
+    background: transparent;
+    color: #cbb693;
+    border: 1.5px dashed #6a5138;
+    font-size: 12px;
+  }
+  .footer-row button:hover { color: var(--stamp-red); border-color: var(--stamp-red); }
+
+  @keyframes stampIn {
+    0% { transform: rotate(-8deg) scale(2.2); opacity: 0; }
+    60% { transform: rotate(-8deg) scale(0.9); opacity: 1; }
+    100% { transform: rotate(-8deg) scale(1); opacity: 0.85; }
+  }
+  .stamp.animate { animation: stampIn 0.35s ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    .stamp.animate { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="nameplate">
+    <div class="plate">
+      <h1>CARD CATALOG</h1>
+      <div class="sub">a drawer for things you haven't filed yet</div>
+    </div>
+  </div>
+
+  <div class="input-row">
+    <input type="text" id="taskInput" placeholder="Write a new card…" maxlength="140" />
+    <select id="prioritySelect">
+      <option value="normal">Normal</option>
+      <option value="urgent">Urgent</option>
+      <option value="low">Low</option>
+    </select>
+    <button id="addBtn">+ Add Card</button>
+  </div>
+
+  <div class="drawer-label">Active Drawer <span class="count" id="activeCount">0</span></div>
+  <div class="card-grid" id="activeGrid"></div>
+  <div class="empty-note" id="activeEmpty" style="display:none;">The drawer is empty. Add your first card above.</div>
+
+  <div class="drawer-label" style="margin-top:34px;">Filed <span class="count" id="filedCount">0</span></div>
+  <div class="filed-list" id="filedList"></div>
+  <div class="empty-note" id="filedEmpty" style="display:none;">Nothing filed yet.</div>
+
+  <div class="footer-row">
+    <button id="clearFiledBtn">Clear filed cards</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'card-catalog-tasks';
+  const taskInput = document.getElementById('taskInput');
+  const prioritySelect = document.getElementById('prioritySelect');
+  const addBtn = document.getElementById('addBtn');
+  const activeGrid = document.getElementById('activeGrid');
+  const activeEmpty = document.getElementById('activeEmpty');
+  const activeCount = document.getElementById('activeCount');
+  const filedList = document.getElementById('filedList');
+  const filedEmpty = document.getElementById('filedEmpty');
+  const filedCount = document.getElementById('filedCount');
+  const clearFiledBtn = document.getElementById('clearFiledBtn');
+
+  let cards = []; // { id, text, priority, done, tilt }
+  let storageReady = false;
+
+  function uid() {
+    return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  async function loadCards() {
+    try {
+      const result = await window.storage.get(STORAGE_KEY, false);
+      if (result && result.value) {
+        cards = JSON.parse(result.value);
+      }
+    } catch (err) {
+      // Key doesn't exist yet, or storage unavailable — start fresh.
+      cards = [];
+    }
+    storageReady = true;
+    render();
+  }
+
+  async function persist() {
+    try {
+      const result = await window.storage.set(STORAGE_KEY, JSON.stringify(cards), false);
+      if (!result) console.error('Storage set returned no result');
+    } catch (err) {
+      console.error('Storage error:', err);
+    }
+  }
+
+  function addCard(text, priority) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    cards.unshift({
+      id: uid(),
+      text: trimmed,
+      priority: priority,
+      done: false,
+      tilt: (Math.random() * 2.4 - 1.2).toFixed(2)
+    });
+    render();
+    persist();
+  }
+
+  function fileCard(id) {
+    const card = cards.find(c => c.id === id);
+    if (card) card.done = true;
+    render(id);
+    persist();
+  }
+
+  function deleteCard(id) {
+    cards = cards.filter(c => c.id !== id);
+    render();
+    persist();
+  }
+
+  function clearFiled() {
+    cards = cards.filter(c => !c.done);
+    render();
+    persist();
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function render(justFiledId) {
+    const active = cards.filter(c => !c.done);
+    const filed = cards.filter(c => c.done);
+
+    activeCount.textContent = active.length;
+    filedCount.textContent = filed.length;
+    activeEmpty.style.display = active.length ? 'none' : 'block';
+    filedEmpty.style.display = filed.length ? 'none' : 'block';
+
+    activeGrid.innerHTML = active.map(c => `
+      <div class="card" style="--tilt:${c.tilt}deg">
+        <span class="tab ${c.priority}"></span>
+        <div class="text">${escapeHtml(c.text)}</div>
+        <div class="card-actions">
+          <button class="file-btn" data-action="file" data-id="${c.id}">File it ✓</button>
+          <button class="delete-btn" data-action="delete" data-id="${c.id}" aria-label="Delete card">✕</button>
+        </div>
+      </div>
+    `).join('');
+
+    filedList.innerHTML = filed.map(c => `
+      <div class="filed-card">
+        <div class="text">${escapeHtml(c.text)}</div>
+        <div class="stamp ${c.id === justFiledId ? 'animate' : ''}">DONE</div>
+      </div>
+    `).join('');
+  }
+
+  activeGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    if (btn.dataset.action === 'file') fileCard(id);
+    if (btn.dataset.action === 'delete') deleteCard(id);
+  });
+
+  clearFiledBtn.addEventListener('click', clearFiled);
+
+  addBtn.addEventListener('click', () => {
+    addCard(taskInput.value, prioritySelect.value);
+    taskInput.value = '';
+    taskInput.focus();
+  });
+
+  taskInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      addCard(taskInput.value, prioritySelect.value);
+      taskInput.value = '';
+    }
+  });
+
+  loadCards();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Local Host — Coffee & Wi-Fi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --latte: #efe3ce;
+    --latte-deep: #e2d3b6;
+    --espresso: #2b1d14;
+    --espresso-soft: #3c2c1f;
+    --caramel: #c97c3d;
+    --caramel-bright: #e0954f;
+    --sage: #7fa65b;
+    --text-main: #2b1d14;
+    --text-muted: #6b5d4f;
+    --chalk: #f6efe0;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--latte);
+    background-image: radial-gradient(circle at 15% 10%, rgba(255,255,255,0.35), transparent 45%);
+    color: var(--text-main);
+    font-family: 'IBM Plex Mono', monospace;
+    line-height: 1.6;
+  }
+
+  a { color: inherit; }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---------------- Nav ---------------- */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--espresso);
+    color: var(--chalk);
+    padding: 12px 0;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+
+  .nav-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .brand {
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+  }
+  .brand .prompt-sym { color: var(--sage); margin-right: 6px; }
+
+  .nav-links {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 13px;
+  }
+  .nav-links a {
+    text-decoration: none;
+    color: #d9cdb8;
+    transition: color 0.15s ease;
+  }
+  .nav-links a:hover { color: var(--caramel-bright); }
+  .nav-links a::before { content: "cd "; color: var(--sage); }
+
+  /* ---------------- Terminal window chrome ---------------- */
+  .term {
+    background: var(--espresso);
+    color: #ecdfc9;
+    border-radius: 10px;
+    box-shadow: 0 18px 40px rgba(43, 29, 20, 0.28);
+    overflow: hidden;
+    margin: 40px 0;
+  }
+  .term-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--espresso-soft);
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot.d1 { background: var(--caramel); }
+  .dot.d2 { background: var(--caramel-bright); }
+  .dot.d3 { background: var(--sage); }
+  .term-title {
+    margin-left: 8px;
+    font-size: 12px;
+    color: #c7b89b;
+    letter-spacing: 0.5px;
+  }
+  .term-body {
+    padding: 22px 24px 28px;
+    font-size: 14px;
+  }
+  .term-body .line { margin: 0 0 6px; white-space: pre-wrap; }
+  .prompt { color: var(--sage); }
+  .path { color: var(--caramel-bright); }
+  .comment { color: #8d7d64; }
+
+  /* ---------------- Hero ---------------- */
+  .hero-wrap { padding-top: 34px; }
+  .hero .term-body { font-size: 15px; min-height: 210px; }
+  .cursor {
+    display: inline-block;
+    width: 9px;
+    height: 16px;
+    background: #ecdfc9;
+    vertical-align: -3px;
+    animation: blink 1s step-end infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cursor { animation: none; }
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .ascii-cup {
+    font-size: 11px;
+    line-height: 1.15;
+    color: var(--caramel-bright);
+    margin: 14px 0;
+    white-space: pre;
+  }
+
+  /* ---------------- Section headers ---------------- */
+  h2.section-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 0 0 4px;
+  }
+  h2.section-title::before { content: "# "; color: var(--caramel); }
+
+  /* ---------------- Menu table ---------------- */
+  .menu-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 16px;
+  }
+  .menu-row {
+    display: contents;
+  }
+  .menu-row .name { font-weight: 600; color: #f3e9d6; }
+  .menu-row .name .desc { display: block; font-weight: 400; font-size: 12px; color: #b7a688; margin-top: 2px; }
+  .menu-row .price { color: var(--sage); text-align: right; white-space: nowrap; }
+  .menu-divider { grid-column: 1 / -1; border-bottom: 1px dashed #4a382a; margin: 8px 0; }
+  .menu-category { grid-column: 1 / -1; color: var(--caramel-bright); font-weight: 700; margin: 14px 0 4px; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+  .menu-category:first-child { margin-top: 0; }
+
+  /* ---------------- Wi-Fi config block ---------------- */
+  .conf-key { color: #8fbf72; }
+  .conf-val { color: #f0c987; }
+  .conf-str { color: #e0954f; }
+  .wifi-note {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px dashed #4a382a;
+    color: #b7a688;
+    font-size: 13px;
+  }
+
+  /* ---------------- Hours log ---------------- */
+  .log-line { display: flex; gap: 12px; }
+  .log-ts { color: #8d7d64; flex-shrink: 0; }
+  .log-open { color: var(--sage); }
+  .log-closed { color: #c47a6a; }
+
+  /* ---------------- Chalkboard (cozy contrast element) ---------------- */
+  .chalkboard-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 48px 0;
+  }
+  .chalkboard {
+    background: #2f3b34;
+    border: 14px solid #5c4630;
+    border-radius: 4px;
+    box-shadow: 0 16px 30px rgba(43,29,20,0.25), inset 0 0 40px rgba(0,0,0,0.35);
+    padding: 28px 32px;
+    max-width: 460px;
+    text-align: center;
+    transform: rotate(-0.6deg);
+  }
+  .chalkboard .label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #9db894;
+    margin-bottom: 10px;
+  }
+  .chalkboard .msg {
+    font-family: 'Caveat', cursive;
+    font-size: 30px;
+    color: var(--chalk);
+    line-height: 1.35;
+  }
+
+  /* ---------------- Footer ---------------- */
+  footer {
+    background: var(--espresso);
+    color: #c7b89b;
+    margin-top: 50px;
+    padding: 34px 0 40px;
+    font-size: 13px;
+  }
+  footer .term-body { padding-top: 4px; }
+  .footer-grid {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  .footer-col h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #8fbf72;
+    margin: 0 0 10px;
+  }
+  .footer-col div { margin-bottom: 4px; }
+  .sign-off { margin-top: 26px; color: #8d7d64; }
+
+  @media (max-width: 560px) {
+    .footer-grid { gap: 24px; }
+    .term-body { padding: 18px; }
+    .hero .term-body { min-height: 260px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="brand"><span class="prompt-sym">~$</span>the-local-host</div>
+    <div class="nav-links">
+      <a href="#menu">menu</a>
+      <a href="#wifi">wifi</a>
+      <a href="#hours">hours</a>
+      <a href="#find-us">find-us</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap hero-wrap">
+  <div class="term hero">
+    <div class="term-bar">
+      <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+      <span class="term-title">guest@the-local-host: ~</span>
+    </div>
+    <div class="term-body" id="heroBody"></div>
+  </div>
+</div>
+
+<div class="wrap" id="menu">
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+      <span class="term-title">cat menu.txt</span>
+    </div>
+    <div class="term-body">
+      <h2 class="section-title">menu.txt</h2>
+      <div class="menu-grid">
+        <div class="menu-category">Espresso</div>
+        <div class="menu-row"><div class="name">Quick Commit<span class="desc">double shot, no chaser</span></div><div class="price">$3.25</div></div>
+        <div class="menu-row"><div class="name">Cortado<span class="desc">equal parts espresso &amp; steamed milk</span></div><div class="price">$4.00</div></div>
+        <div class="menu-row"><div class="name">The Deploy<span class="desc">large iced latte, oat or whole milk</span></div><div class="price">$5.25</div></div>
+        <div class="menu-row"><div class="name">Rubber Duck Mocha<span class="desc">dark chocolate, steamed milk, espresso</span></div><div class="price">$5.50</div></div>
+
+        <div class="menu-category">Slow Brew</div>
+        <div class="menu-row"><div class="name">Pour Over<span class="desc">rotating single-origin, ask what's on tap</span></div><div class="price">$4.75</div></div>
+        <div class="menu-row"><div class="name">Cold Brew — Nightly Build<span class="desc">steeped 18 hours, served over ice</span></div><div class="price">$4.50</div></div>
+
+        <div class="menu-category">From the Oven</div>
+        <div class="menu-row"><div class="name">Sourdough Toast<span class="desc">butter, local honey</span></div><div class="price">$4.00</div></div>
+        <div class="menu-row"><div class="name">Avocado, as-a-Service<span class="desc">smashed avocado, chili flake, sourdough</span></div><div class="price">$8.50</div></div>
+        <div class="menu-row"><div class="name">Banana Bread<span class="desc">baked daily, walnut optional</span></div><div class="price">$3.75</div></div>
+        <div class="menu-row"><div class="name">Butter Croissant<span class="desc">from the corner bakery, warmed</span></div><div class="price">$3.50</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="wifi">
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+      <span class="term-title">cat wifi.conf</span>
+    </div>
+    <div class="term-body">
+      <h2 class="section-title">wifi.conf</h2>
+      <div class="line"><span class="conf-key">ssid</span>      = <span class="conf-str">"TheLocalHost_5G"</span></div>
+      <div class="line"><span class="conf-key">password</span>  = <span class="conf-str">"firstcupfree"</span></div>
+      <div class="line"><span class="conf-key">speed</span>     = <span class="conf-val">300mbps</span> <span class="comment"># symmetric, fiber</span></div>
+      <div class="line"><span class="conf-key">time_limit</span> = <span class="conf-val">none</span> <span class="comment"># stay as long as you like</span></div>
+      <div class="line"><span class="conf-key">outlets</span>   = <span class="conf-val">plenty</span> <span class="comment"># every table, both counters</span></div>
+      <div class="wifi-note">One purchase gets you the whole day. Standing desk counter by the window is first-come, first-served — arrive before 9am on weekdays if you need it.</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="hours">
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+      <span class="term-title">tail -f hours.log</span>
+    </div>
+    <div class="term-body">
+      <h2 class="section-title">hours.log</h2>
+      <div class="log-line"><span class="log-ts">MON–FRI</span><span class="log-open">OPEN</span> 06:30 → 19:00</div>
+      <div class="log-line"><span class="log-ts">SAT</span><span class="log-open">OPEN</span> 07:30 → 19:00</div>
+      <div class="log-line"><span class="log-ts">SUN</span><span class="log-open">OPEN</span> 08:00 → 16:00</div>
+      <div class="log-line"><span class="log-ts">DEC 25, JAN 1</span><span class="log-closed">CLOSED</span> holiday</div>
+    </div>
+  </div>
+</div>
+
+<div class="chalkboard-wrap">
+  <div class="chalkboard">
+    <div class="label">today's vibe — written by hand, on purpose</div>
+    <div class="msg">Slow mornings, fast Wi-Fi.<br>Bring your laptop, your book,<br>or just yourself. Stay a while.</div>
+  </div>
+</div>
+
+<footer id="find-us">
+  <div class="wrap">
+    <div class="term" style="margin:0; box-shadow:none;">
+      <div class="term-bar">
+        <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+        <span class="term-title">whoami --location</span>
+      </div>
+      <div class="term-body">
+        <div class="footer-grid">
+          <div class="footer-col">
+            <h3>Find us</h3>
+            <div>412 Birch Street</div>
+            <div>Unit A, corner entrance</div>
+            <div>Riverside District</div>
+          </div>
+          <div class="footer-col">
+            <h3>Reach us</h3>
+            <div>hello@thelocalhost.cafe</div>
+            <div>(555) 019-2842</div>
+          </div>
+          <div class="footer-col">
+            <h3>Follow</h3>
+            <div>@thelocalhost</div>
+            <div>#thelocalhostcafe</div>
+          </div>
+        </div>
+        <div class="sign-off"><span class="prompt">guest@the-local-host</span>:<span class="path">~</span>$ logout<br>see you tomorrow.</div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  const heroBody = document.getElementById('heroBody');
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const cupArt =
+`      (  )   (   )  )
+       ) (   )  (  (
+       ( )  (    ) )
+     _______________
+    |               |
+    |               |__
+    |    THE LOCAL  |  )
+    |     HOST      |_/
+    |_______________|
+`;
+
+  const script = [
+    { type: 'prompt', text: 'ssh guest@the-local-host' },
+    { type: 'plain', text: "Welcome. It's warm in here, and the Wi-Fi never drops." },
+    { type: 'ascii' },
+    { type: 'prompt', text: 'cat about.txt' },
+    { type: 'plain', text: 'A neighborhood coffee shop for people who work from laptops,\nread paper books, and occasionally do both at once.' },
+    { type: 'prompt', text: 'ls' },
+    { type: 'plain', text: 'menu.txt   wifi.conf   hours.log   good-light/' },
+  ];
+
+  function renderStatic() {
+    let html = '';
+    for (const line of script) {
+      if (line.type === 'prompt') {
+        html += `<div class="line"><span class="prompt">guest@the-local-host</span>:<span class="path">~</span>$ ${escapeHtml(line.text)}</div>`;
+      } else if (line.type === 'plain') {
+        html += `<div class="line">${escapeHtml(line.text)}</div>`;
+      } else if (line.type === 'ascii') {
+        html += `<div class="ascii-cup">${escapeHtml(cupArt)}</div>`;
+      }
+    }
+    html += `<div class="line"><span class="prompt">guest@the-local-host</span>:<span class="path">~</span>$ <span class="cursor"></span></div>`;
+    heroBody.innerHTML = html;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  async function typeLine(container, text, speed) {
+    const lineEl = document.createElement('div');
+    lineEl.className = 'line';
+    container.appendChild(lineEl);
+    for (let i = 0; i <= text.length; i++) {
+      lineEl.textContent = text.slice(0, i);
+      await sleep(speed);
+    }
+  }
+
+  function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+  async function animate() {
+    heroBody.innerHTML = '';
+    for (const line of script) {
+      if (line.type === 'prompt') {
+        const wrap = document.createElement('div');
+        wrap.className = 'line';
+        const promptSpan = document.createElement('span');
+        promptSpan.className = 'prompt';
+        promptSpan.textContent = 'guest@the-local-host';
+        const pathSpan = document.createElement('span');
+        pathSpan.className = 'path';
+        pathSpan.textContent = ':~';
+        wrap.appendChild(promptSpan);
+        wrap.appendChild(pathSpan);
+        wrap.appendChild(document.createTextNode('$ '));
+        heroBody.appendChild(wrap);
+        const cmdSpan = document.createElement('span');
+        wrap.appendChild(cmdSpan);
+        for (let i = 0; i <= line.text.length; i++) {
+          cmdSpan.textContent = line.text.slice(0, i);
+          await sleep(28);
+        }
+        await sleep(200);
+      } else if (line.type === 'plain') {
+        const el = document.createElement('div');
+        el.className = 'line';
+        el.style.whiteSpace = 'pre-wrap';
+        heroBody.appendChild(el);
+        el.textContent = line.text;
+        await sleep(260);
+      } else if (line.type === 'ascii') {
+        const el = document.createElement('div');
+        el.className = 'ascii-cup';
+        el.textContent = cupArt;
+        heroBody.appendChild(el);
+        await sleep(200);
+      }
+    }
+    const finalPrompt = document.createElement('div');
+    finalPrompt.className = 'line';
+    finalPrompt.innerHTML = `<span class="prompt">guest@the-local-host</span>:<span class="path">~</span>$ <span class="cursor"></span>`;
+    heroBody.appendChild(finalPrompt);
+  }
+
+  if (prefersReduced) {
+    renderStatic();
+  } else {
+    animate();
+  }
+})();
+</script>
+
+</body>
+</html>

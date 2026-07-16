@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Franklin — Full-Stack &amp; AI Developer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B0E14;
+    --panel: #10141B;
+    --panel-2: #141922;
+    --border: #1E2530;
+    --border-soft: #191F29;
+    --text: #DCE2E8;
+    --muted: #7A8492;
+    --muted-2: #4B535E;
+    --accent: #5FE1A8;
+    --accent-dim: #1D4033;
+    --warn: #FF8A5C;
+    --radius: 4px;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  html, body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+  }
+  body{
+    background-image:
+      radial-gradient(circle at 85% 0%, rgba(95,225,168,0.05), transparent 45%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+  }
+  ::selection{ background: var(--accent); color: #0a1712; }
+  a{ color: var(--accent); text-decoration: none; }
+  a:hover{ text-decoration: underline; }
+  .mono{ font-family: 'JetBrains Mono', monospace; }
+
+  .wrap{ max-width: 920px; margin: 0 auto; padding: 0 24px; }
+
+  /* ---------- Nav ---------- */
+  nav{
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(11,14,20,0.85);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  nav .wrap{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 24px;
+  }
+  .nav-brand{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 14px; letter-spacing: 0.05em;
+    color: var(--text);
+  }
+  .nav-brand span{ color: var(--accent); }
+  .nav-links{ display:flex; gap: 24px; }
+  .nav-links a{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12.5px; color: var(--muted); letter-spacing: 0.04em;
+  }
+  .nav-links a:hover{ color: var(--accent); text-decoration:none; }
+  @media (max-width: 560px){ .nav-links{ gap: 14px; } .nav-links a{ font-size: 11px; } }
+
+  /* ---------- Hero / terminal ---------- */
+  .hero{ padding: 64px 0 40px; }
+  .terminal{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px -30px rgba(0,0,0,0.6);
+  }
+  .term-bar{
+    display:flex; align-items:center; gap: 8px;
+    padding: 10px 14px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .term-dot{ width:10px; height:10px; border-radius:50%; }
+  .term-dot.r{ background:#5c5c5c; }
+  .term-dot.y{ background:#5c5c5c; }
+  .term-dot.g{ background:#5c5c5c; }
+  .term-title{
+    margin-left: 8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11.5px; color: var(--muted-2);
+  }
+  .term-body{
+    padding: 24px 26px 30px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14.5px;
+    line-height: 1.85;
+    min-height: 210px;
+  }
+  .term-line{ color: var(--text); }
+  .term-prompt{ color: var(--accent); }
+  .term-output{ color: var(--muted); padding-left: 0; }
+  .cursor{
+    display:inline-block; width: 8px; height: 16px;
+    background: var(--accent);
+    vertical-align: text-bottom;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink{ 50%{ opacity: 0; } }
+  @media (prefers-reduced-motion: reduce){ .cursor{ animation: none; } }
+
+  .hero-links{
+    display:flex; gap: 14px; margin-top: 22px; flex-wrap: wrap;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12.5px; letter-spacing: 0.04em;
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 18px; cursor: pointer;
+    display:inline-flex; align-items:center; gap: 8px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn:hover{ border-color: var(--accent); color: var(--accent); }
+  .btn.primary{ background: var(--accent); color: #0a1712; border-color: var(--accent); }
+  .btn.primary:hover{ background: #79eab8; color:#0a1712; }
+
+  /* ---------- Section shell ---------- */
+  section{ padding: 56px 0; border-top: 1px solid var(--border-soft); }
+  .section-head{ display:flex; align-items:baseline; gap: 12px; margin-bottom: 28px; }
+  .section-tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--accent); letter-spacing: 0.06em;
+  }
+  .section-title{
+    font-family:'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 22px; color: var(--text);
+  }
+
+  /* ---------- About ---------- */
+  .about-grid{ display:grid; grid-template-columns: 1fr; gap: 18px; }
+  .about-body{ font-size: 15.5px; line-height: 1.75; color: var(--text); max-width: 68ch; }
+  .about-body strong{ color: var(--accent); font-weight: 600; }
+  .tag-row{ display:flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .tag{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 11.5px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 20px;
+    padding: 5px 12px;
+  }
+
+  /* ---------- Projects ---------- */
+  .proj-list{ display:flex; flex-direction:column; gap: 14px; }
+  .proj-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+  }
+  .proj-top{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    gap: 12px; margin-bottom: 8px; flex-wrap: wrap;
+  }
+  .proj-name{ font-family:'JetBrains Mono', monospace; font-weight: 700; font-size: 16.5px; color: var(--text); }
+  .proj-path{ font-family:'JetBrains Mono', monospace; font-size: 12px; color: var(--muted-2); }
+  .status-badge{
+    font-family:'JetBrains Mono', monospace;
+    font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  .status-badge.live{ background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(95,225,168,0.3); }
+  .status-badge.progress{ background: rgba(255,138,92,0.1); color: var(--warn); border: 1px solid rgba(255,138,92,0.3); }
+  .proj-desc{ font-size: 14.5px; color: var(--muted); line-height: 1.65; margin: 10px 0 14px; max-width: 66ch; }
+  .proj-stack{ display:flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+  .stack-chip{
+    font-family:'JetBrains Mono', monospace; font-size: 11px; color: var(--text);
+    background: var(--panel-2); border: 1px solid var(--border-soft);
+    border-radius: 3px; padding: 4px 9px;
+  }
+  .proj-links{ display:flex; gap: 16px; }
+  .proj-links a{ font-family:'JetBrains Mono', monospace; font-size: 12.5px; }
+
+  /* ---------- Skills ---------- */
+  .scan-head{
+    font-family:'JetBrains Mono', monospace; font-size: 12.5px; color: var(--muted-2);
+    margin-bottom: 18px; padding: 10px 14px; background: var(--panel);
+    border: 1px solid var(--border-soft); border-radius: var(--radius);
+  }
+  .scan-head .ok{ color: var(--accent); }
+  .skills-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .skill-cat{
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+  }
+  .skill-cat h4{
+    margin: 0 0 12px; font-family:'JetBrains Mono', monospace; font-size: 12.5px;
+    color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase;
+    display:flex; align-items:center; gap: 8px;
+  }
+  .skill-cat h4::before{ content: '»'; color: var(--accent); }
+  .skill-items{ display:flex; flex-wrap: wrap; gap: 7px; }
+  .skill-chip{
+    font-family:'JetBrains Mono', monospace; font-size: 12px; color: var(--text);
+    background: var(--panel-2); border: 1px solid var(--border-soft);
+    border-radius: 3px; padding: 5px 10px;
+  }
+
+  /* ---------- Contact ---------- */
+  .contact-panel{
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 30px 28px;
+    display:flex; flex-direction:column; gap: 18px;
+  }
+  .contact-line{
+    display:flex; align-items:center; gap: 14px;
+    font-family:'JetBrains Mono', monospace; font-size: 14px;
+    flex-wrap: wrap;
+  }
+  .contact-label{ color: var(--muted-2); min-width: 90px; }
+  .contact-value{ color: var(--text); }
+  .contact-value a{ color: var(--accent); }
+  .fill-note{
+    font-size: 12px; color: var(--warn); font-family: 'Inter', sans-serif;
+    background: rgba(255,138,92,0.08); border: 1px solid rgba(255,138,92,0.25);
+    padding: 10px 14px; border-radius: var(--radius);
+  }
+
+  footer{
+    padding: 30px 0 60px;
+    font-family:'JetBrains Mono', monospace; font-size: 11.5px; color: var(--muted-2);
+    display:flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+    border-top: 1px solid var(--border-soft);
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="nav-brand">franklin<span>@</span>dev</div>
+    <div class="nav-links">
+      <a href="#about">about</a>
+      <a href="#projects">projects</a>
+      <a href="#skills">skills</a>
+      <a href="#contact">contact</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <section class="hero" id="top">
+    <div class="terminal">
+      <div class="term-bar">
+        <span class="term-dot r"></span><span class="term-dot y"></span><span class="term-dot g"></span>
+        <span class="term-title">franklin@dev: ~</span>
+      </div>
+      <div class="term-body" id="termBody"></div>
+    </div>
+    <div class="hero-links">
+      <a class="btn primary" href="#projects">View Projects</a>
+      <a class="btn" href="#contact">Get In Touch</a>
+    </div>
+  </section>
+
+  <section id="about">
+    <div class="section-head">
+      <span class="section-tag mono">01</span>
+      <span class="section-title">cat about.md</span>
+    </div>
+    <div class="about-grid">
+      <p class="about-body">
+        I'm a full-stack developer building <strong>AI-powered products from the ground up</strong> — right now that means
+        an EdTech SaaS platform and a file-automation tool, both built on Flask and wired into LLM APIs for the parts
+        that actually need intelligence. I like getting close to the machine: I spend time in Linux internals,
+        troubleshooting systems at the driver and display-manager level, and studying offensive and defensive
+        security tooling to understand how the software I ship can be attacked and defended.
+      </p>
+      <p class="about-body">
+        My approach is hands-on and end-to-end — architecture, auth, payments, deployment, and the AI features
+        that tie it together — rather than sticking to one layer of the stack.
+      </p>
+      <div class="tag-row">
+        <span class="tag">Python / Flask</span>
+        <span class="tag">LLM Integration</span>
+        <span class="tag">SQL &amp; ORM Design</span>
+        <span class="tag">Linux Systems</span>
+        <span class="tag">Security Fundamentals</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="projects">
+    <div class="section-head">
+      <span class="section-tag mono">02</span>
+      <span class="section-title">ls ~/projects</span>
+    </div>
+    <div class="proj-list">
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">CureLearn</div>
+            <div class="proj-path mono">~/projects/curelearn</div>
+          </div>
+          <span class="status-badge progress">In Progress</span>
+        </div>
+        <p class="proj-desc">
+          An AI-powered EdTech platform for students and teachers. Role-based dashboards, an AI toolkit
+          (quiz generator, flashcard creator, summarizer, study &amp; lesson planners) built on the Anthropic API,
+          and a Stripe-based teacher verification flow. Built from the ground up as a full production application.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">Flask</span>
+          <span class="stack-chip">Flask-SQLAlchemy</span>
+          <span class="stack-chip">Flask-Login</span>
+          <span class="stack-chip">Flask-Bcrypt</span>
+          <span class="stack-chip">Anthropic API</span>
+          <span class="stack-chip">Stripe</span>
+          <span class="stack-chip">Bootstrap 5</span>
+          <span class="stack-chip">PostgreSQL / Render</span>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">DataFlow</div>
+            <div class="proj-path mono">~/projects/dataflow</div>
+          </div>
+          <span class="status-badge progress">In Progress</span>
+        </div>
+        <p class="proj-desc">
+          A Flask app that takes any file — CSV, Excel, PDF, or Word doc — plus a plain-English instruction, and
+          processes it accordingly. Checks a predefined operation set first for speed, falling back to an LLM for
+          instructions it doesn't recognize, with a different supported instruction set per file type.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">Flask</span>
+          <span class="stack-chip">OpenAI API</span>
+          <span class="stack-chip">Pandas</span>
+          <span class="stack-chip">File Parsing</span>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">Signal</div>
+            <div class="proj-path mono">~/projects/signal</div>
+          </div>
+          <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+          A two-way Morse code transceiver — text to code and back — with a synced signal lamp and audio tone that
+          play back messages in accurate transmission timing, plus a live pulse-trace visualization.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">JavaScript</span>
+          <span class="stack-chip">Web Audio API</span>
+          <span class="stack-chip">CSS Animation</span>
+        </div>
+        <div class="proj-links">
+          <a href="morse.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">Palette</div>
+            <div class="proj-path mono">~/projects/palette</div>
+          </div>
+          <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+          A client-side color palette generator. Drops an image into a k-means clustering pass to pull out its
+          dominant colors, with hex/RGB values, dominance or hue sorting, and one-click export as CSS variables,
+          JSON, or a downloadable swatch strip — no upload, all in-browser.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">JavaScript</span>
+          <span class="stack-chip">Canvas API</span>
+          <span class="stack-chip">K-Means Clustering</span>
+        </div>
+        <div class="proj-links">
+          <a href="palette.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">Grid</div>
+            <div class="proj-path mono">~/projects/grid</div>
+          </div>
+          <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+          A tic-tac-toe game with an unbeatable minimax-driven CPU opponent and a local 2-player mode, plus
+          win-line highlighting and running score tracking across rounds.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">JavaScript</span>
+          <span class="stack-chip">Minimax Algorithm</span>
+        </div>
+        <div class="proj-links">
+          <a href="tictactoe.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">Type-O-Meter</div>
+            <div class="proj-path mono">~/projects/type-o-meter</div>
+          </div>
+          <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+          A typewriter-themed typing speed test. Live WPM, accuracy, and error tracking, a two-tone ribbon
+          progress bar, randomized passages, and per-character correctness highlighting as you type.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">JavaScript</span>
+          <span class="stack-chip">CSS Animation</span>
+        </div>
+        <div class="proj-links">
+          <a href="typing-speed-test.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">BRICKWORKS</div>
+            <div class="proj-path mono">~/projects/brickworks</div>
+          </div>
+          <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+          A Breakout clone with an arcade-cabinet shell. Mouse, keyboard, and touch paddle control, brick rows
+          color-coded by point value, escalating ball speed and shrinking paddle across levels, pause/reset built in.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">JavaScript</span>
+          <span class="stack-chip">Canvas API</span>
+        </div>
+        <div class="proj-links">
+          <a href="breakout-game.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">The Local Host</div>
+            <div class="proj-path mono">~/projects/the-local-host</div>
+          </div>
+          <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+          A cafe &amp; Wi-Fi business site styled as a terminal session — an animated boot-sequence hero, menu
+          and hours rendered as "cat" and "tail -f" command output, and a hand-chalked note for warmth.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">HTML/CSS</span>
+          <span class="stack-chip">JavaScript</span>
+        </div>
+        <div class="proj-links">
+          <a href="cafe-wifi-site.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">Card Catalog</div>
+            <div class="proj-path mono">~/projects/card-catalog</div>
+          </div>
+          <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+          A todo list styled as a library card drawer. Priority tabs, a "File it" action that stamps cards DONE
+          and moves them to a filed drawer, and persistent storage so tasks survive a page reload.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">JavaScript</span>
+          <span class="stack-chip">Persistent Storage API</span>
+        </div>
+        <div class="proj-links">
+          <a href="todo-list.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">Vanishing Ink</div>
+            <div class="proj-path mono">~/projects/vanishing-ink</div>
+          </div>
+          <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+          A forced-momentum writing tool — text fades and dissolves roughly 14 seconds after it's typed unless
+          you keep writing. Backspace only affects what's still visible; once a word fades, it's gone for good.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">JavaScript</span>
+          <span class="stack-chip">CSS Transitions</span>
+        </div>
+        <div class="proj-links">
+          <a href="vanishing-ink.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">Page &amp; Voice</div>
+            <div class="proj-path mono">~/projects/page-and-voice</div>
+          </div>
+          <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+          A PDF-to-audiobook player styled as a vintage radio. Extracts text page-by-page from any PDF and reads
+          it aloud with the browser's built-in voices, with a tuning-dial page indicator and sentence-by-sentence
+          transcript highlighting.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">JavaScript</span>
+          <span class="stack-chip">pdf.js</span>
+          <span class="stack-chip">Web Speech API</span>
+        </div>
+        <div class="proj-links">
+          <a href="pdf-to-audiobook.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">Custom Web Scraper</div>
+            <div class="proj-path mono">~/projects/web-scraper</div>
+          </div>
+          <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+          A generic scraper for pulling text, links, images, or any custom CSS-selector data from a URL, with
+          CSV/JSON export. Ships two ways: a Python CLI with pagination and a robots.txt check, and a
+          browser-based version with a direct-fetch → CORS-proxy → manual-paste fallback chain for sites that
+          block cross-origin requests.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">Python</span>
+          <span class="stack-chip">BeautifulSoup</span>
+          <span class="stack-chip">JavaScript</span>
+          <span class="stack-chip">DOM Parsing</span>
+        </div>
+        <div class="proj-links">
+          <a href="web-scraper.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">Cipher Desk</div>
+            <div class="proj-path mono">~/projects/cipher-desk</div>
+          </div>
+        <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+        An encode/decode studio covering classical ciphers (Caesar, ROT13, Atbash, Vigenère, Rail Fence, Morse),
+        common encodings (Base64, Base32, Hex, Binary, URL, HTML Entities), and one-way hashes (MD5, SHA-1,
+        SHA-256, SHA-512) — with a rotating cipher-wheel dial that visualizes the Caesar shift in real time.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">JavaScript</span>
+          <span class="stack-chip">CryptoJS</span>
+          <span class="stack-chip">Web Crypto</span>
+        </div>
+        <div class="proj-links">
+          <a href="cipher-desk.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+
+        <div class="proj-card">
+          <div class="proj-top">
+            <div>
+              <div class="proj-name">CTRL+SHOP</div>
+              <div class="proj-path mono">~/projects/ctrl-shop</div>
+            </div>
+          <span class="status-badge live">Complete</span>
+          </div>
+        <p class="proj-desc">
+          A dev-themed demo online shop — category filters, search, a persistent cart drawer with quantity steppers,
+          and a simulated checkout flow that generates a fake order number. Clearly labeled as a demo; no real
+          payment is processed.
+        </p>
+          <div class="proj-stack">
+            <span class="stack-chip">JavaScript</span>
+            <span class="stack-chip">Persistent Storage API</span>
+          </div>
+          <div class="proj-links">
+            <a href="online-shop.html" class="live-link">→ Live demo</a>
+          </div>
+        </div>
+
+      <div class="proj-card">
+        <div class="proj-top">
+          <div>
+            <div class="proj-name">STARMAP</div>
+            <div class="proj-path mono">~/projects/starmap</div>
+          </div>
+          <span class="status-badge live">Complete</span>
+        </div>
+        <p class="proj-desc">
+          A GitHub profile explorer built on the public GitHub REST API. Search any username to see their profile
+          badge and stats, then their non-fork repositories plotted as stars in a night sky — sized by stargazer
+          count — alongside a language breakdown and a sortable repo list.
+        </p>
+        <div class="proj-stack">
+          <span class="stack-chip">JavaScript</span>
+          <span class="stack-chip">GitHub REST API</span>
+          <span class="stack-chip">Canvas API</span>
+        </div>
+        <div class="proj-links">
+          <a href="starmap.html" class="live-link">→ Live demo</a>
+        </div>
+      </div>
+
+
+
+    </div>
+  </section>
+
+  <section id="skills">
+    <div class="section-head">
+      <span class="section-tag mono">03</span>
+      <span class="section-title">scan --skills</span>
+    </div>
+    <div class="scan-head mono">
+      <span class="ok">✓</span> scan complete — 4 categories, 26 items indexed
+    </div>
+    <div class="skills-grid">
+      <div class="skill-cat">
+        <h4>Languages &amp; Frameworks</h4>
+        <div class="skill-items">
+          <span class="skill-chip">Python</span>
+          <span class="skill-chip">Flask</span>
+          <span class="skill-chip">JavaScript</span>
+          <span class="skill-chip">SQL</span>
+          <span class="skill-chip">Jinja2</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <h4>Product Stack</h4>
+        <div class="skill-items">
+          <span class="skill-chip">Flask-SQLAlchemy</span>
+          <span class="skill-chip">Flask-Login</span>
+          <span class="skill-chip">Stripe API</span>
+          <span class="skill-chip">Bootstrap 5</span>
+          <span class="skill-chip">PostgreSQL</span>
+          <span class="skill-chip">Render</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <h4>AI Integration</h4>
+        <div class="skill-items">
+          <span class="skill-chip">Anthropic API</span>
+          <span class="skill-chip">OpenAI API</span>
+          <span class="skill-chip">Prompt Design</span>
+        </div>
+      </div>
+      <div class="skill-cat">
+        <h4>Systems &amp; Security</h4>
+        <div class="skill-items">
+          <span class="skill-chip">Linux (Mint / Kali)</span>
+          <span class="skill-chip">nmap</span>
+          <span class="skill-chip">Metasploit</span>
+          <span class="skill-chip">Hydra</span>
+          <span class="skill-chip">John the Ripper</span>
+          <span class="skill-chip">Snort / Suricata</span>
+          <span class="skill-chip">Wazuh / OSSEC</span>
+          <span class="skill-chip">Shodan</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact">
+    <div class="section-head">
+      <span class="section-tag mono">04</span>
+      <span class="section-title">./connect --franklin</span>
+    </div>
+    <div class="contact-panel">
+      <div class="contact-line">
+        <span class="contact-label">email</span>
+        <span class="contact-value"><a href="mailto:damienfranklin2000@gmail.com">damienfranklin2000@gmail.com</a></span>
+      </div>
+      <div class="contact-line">
+        <span class="contact-label">github</span>
+        <span class="contact-value"><a href="https://github.com/damien222201" target="_blank" rel="noopener">github.com/damien222201</a></span>
+      </div>
+      <div class="contact-line">
+        <span class="contact-label">linkedin</span>
+        <span class="contact-value"><a href="https://www.linkedin.com/in/franklin-udeh-b548a4364?utm_source=share_via&utm_content=profile&utm_medium=member_android" target="_blank" rel="noopener">linkedin.com/in/franklin-udeh</a></span>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; width:100%;">
+    <span>Built with Flask-adjacent grit &amp; too much coffee.</span>
+    <span id="year"></span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  const termBody = document.getElementById('termBody');
+  const lines = [
+    { prompt: 'whoami', output: 'Franklin — full-stack &amp; AI developer' },
+    { prompt: 'cat status.log', output: 'Building CureLearn (AI EdTech SaaS) and DataFlow (file automation tool)' },
+    { prompt: 'echo $FOCUS', output: 'Python · Flask · LLM integration · systems &amp; security' }
+  ];
+
+  let lineIndex = 0;
+  let charIndex = 0;
+  let phase = 'prompt'; // 'prompt' -> typing "$ command", then 'output' -> reveal output line
+  const typeSpeed = 32;
+
+  function render(){
+    let html = '';
+    for (let i = 0; i < lineIndex; i++){
+      html += `<div class="term-line"><span class="term-prompt">$</span> ${lines[i].prompt}</div>`;
+      html += `<div class="term-output">${lines[i].output}</div>`;
+    }
+    if (lineIndex < lines.length){
+      const cur = lines[lineIndex];
+      if (phase === 'prompt'){
+        const partial = cur.prompt.slice(0, charIndex);
+        html += `<div class="term-line"><span class="term-prompt">$</span> ${partial}<span class="cursor"></span></div>`;
+      } else {
+        html += `<div class="term-line"><span class="term-prompt">$</span> ${cur.prompt}</div>`;
+        const partial = cur.output.slice(0, charIndex);
+        html += `<div class="term-output">${partial}<span class="cursor"></span></div>`;
+      }
+    } else {
+      html += `<div class="term-line"><span class="term-prompt">$</span> <span class="cursor"></span></div>`;
+    }
+    termBody.innerHTML = html;
+  }
+
+  function step(){
+    if (lineIndex >= lines.length){ render(); return; }
+    const cur = lines[lineIndex];
+    const target = phase === 'prompt' ? cur.prompt : cur.output.replace(/&amp;/g, '&');
+    const targetLen = phase === 'prompt' ? cur.prompt.length : cur.output.length;
+
+    if (charIndex < targetLen){
+      charIndex++;
+      render();
+      setTimeout(step, typeSpeed);
+    } else {
+      if (phase === 'prompt'){
+        phase = 'output';
+        charIndex = 0;
+        setTimeout(step, 220);
+      } else {
+        lineIndex++;
+        charIndex = 0;
+        phase = 'prompt';
+        setTimeout(step, 420);
+      }
+    }
+  }
+
+  // Respect reduced motion: render everything immediately
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    lineIndex = lines.length;
+    render();
+  } else {
+    step();
+  }
+
+  document.getElementById('year').textContent = '© ' + new Date().getFullYear();
+})();
+</script>
+
+</body>
+</html>

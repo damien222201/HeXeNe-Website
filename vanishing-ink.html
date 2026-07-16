@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vanishing Ink — Write Forward</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #efe6d8;
+    --paper-deep: #e2d5bd;
+    --ink: #1c2541;
+    --ink-soft: #4a5578;
+    --gold: #a8842e;
+    --warn: #a3453a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--ink);
+    background-image: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.04), transparent 55%);
+    color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 16px 60px;
+  }
+
+  .wrap { width: 100%; max-width: 720px; }
+
+  header {
+    text-align: center;
+    margin-bottom: 22px;
+  }
+  header h1 {
+    font-family: 'Crimson Text', serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: clamp(26px, 5vw, 38px);
+    margin: 0;
+    letter-spacing: 0.5px;
+    color: var(--paper);
+  }
+  header .sub {
+    font-size: 11.5px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #9aa3c2;
+    margin-top: 6px;
+  }
+
+  /* ---------------- Stats bar ---------------- */
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .stat { text-align: center; }
+  .stat .value { font-size: 19px; font-weight: 600; color: var(--gold); }
+  .stat .label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: #8188a6; }
+
+  /* ---------------- Paper ---------------- */
+  .paper-frame {
+    background: var(--paper);
+    border-radius: 4px;
+    box-shadow: 0 22px 50px rgba(0,0,0,0.4);
+    padding: 30px 32px;
+    position: relative;
+    min-height: 260px;
+    cursor: text;
+  }
+
+  .paper-frame::after {
+    /* ink vignette pooling at the bottom, subtle */
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 60px;
+    background: linear-gradient(to top, rgba(28,37,65,0.06), transparent);
+    pointer-events: none;
+    border-radius: 0 0 4px 4px;
+  }
+
+  #textDisplay {
+    font-family: 'Crimson Text', serif;
+    font-size: clamp(18px, 2.6vw, 22px);
+    line-height: 1.85;
+    color: var(--ink);
+    min-height: 180px;
+    word-wrap: break-word;
+  }
+
+  #textDisplay span.ch {
+    transition: opacity 0.5s linear, filter 0.5s linear;
+    white-space: pre-wrap;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #textDisplay span.ch { transition: none; }
+  }
+
+  .placeholder {
+    color: #b3a688;
+    font-style: italic;
+  }
+
+  .nib-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    background: var(--ink);
+    vertical-align: -0.15em;
+    animation: blink 1s step-end infinite;
+    margin-left: 1px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .nib-cursor { animation: none; }
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .hidden-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    height: 0; width: 0;
+  }
+
+  .idle-note {
+    margin-top: 14px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--warn);
+    letter-spacing: 0.5px;
+    font-style: italic;
+    min-height: 16px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .idle-note.show { opacity: 1; }
+
+  .hint {
+    margin-top: 6px;
+    text-align: center;
+    font-size: 11.5px;
+    color: #8188a6;
+    line-height: 1.7;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 22px;
+  }
+
+  button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    background: transparent;
+    color: var(--paper);
+    border: 1.5px solid #545e82;
+    border-radius: 4px;
+    padding: 10px 22px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  button:hover { border-color: var(--warn); color: var(--warn); }
+  button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  @media (max-width: 480px) {
+    .paper-frame { padding: 22px 18px; }
+    .stats { gap: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Vanishing Ink</h1>
+    <div class="sub">write forward — the past won't wait</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="value" id="elapsedVal">0:00</div><div class="label">Elapsed</div></div>
+    <div class="stat"><div class="value" id="totalVal">0</div><div class="label">Total Typed</div></div>
+    <div class="stat"><div class="value" id="visibleVal">0</div><div class="label">Still Visible</div></div>
+  </div>
+
+  <div class="paper-frame" id="paperFrame">
+    <div id="textDisplay"><span class="placeholder" id="placeholderText">Click here and start writing. Whatever you type will fade away after about fourteen seconds — so keep moving forward.</span></div>
+    <textarea class="hidden-input" id="hiddenInput" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+  </div>
+
+  <div class="idle-note" id="idleNote">the ink is starting to dry…</div>
+  <div class="hint">Backspace erases only what's still visible. Once a word fades, it's gone for good.</div>
+
+  <div class="controls">
+    <button id="resetBtn">↺ Fresh Page</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const FADE_START = 10000;   // ms fully visible
+  const FADE_DURATION = 4000; // ms to fade out after FADE_START
+  const IDLE_THRESHOLD = 3000; // ms of no input before showing idle note
+
+  const hiddenInput = document.getElementById('hiddenInput');
+  const paperFrame = document.getElementById('paperFrame');
+  const textDisplay = document.getElementById('textDisplay');
+  const placeholderText = document.getElementById('placeholderText');
+  const elapsedVal = document.getElementById('elapsedVal');
+  const totalVal = document.getElementById('totalVal');
+  const visibleVal = document.getElementById('visibleVal');
+  const idleNote = document.getElementById('idleNote');
+  const resetBtn = document.getElementById('resetBtn');
+
+  let buffer = [];       // { ch, ts }
+  let lastValue = "";
+  let totalTyped = 0;
+  let sessionStart = null;
+  let lastInputTime = null;
+  let elapsedTimerHandle = null;
+  let fadeTimerHandle = null;
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function ensureSessionStarted() {
+    if (sessionStart === null) {
+      sessionStart = Date.now();
+      elapsedTimerHandle = setInterval(updateElapsed, 250);
+    }
+    lastInputTime = Date.now();
+  }
+
+  function updateElapsed() {
+    if (sessionStart === null) return;
+    const secs = Math.floor((Date.now() - sessionStart) / 1000);
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    elapsedVal.textContent = m + ':' + String(s).padStart(2, '0');
+
+    const idle = lastInputTime && (Date.now() - lastInputTime) > IDLE_THRESHOLD;
+    idleNote.classList.toggle('show', !!idle && buffer.length > 0);
+  }
+
+  function handleInput() {
+    const newValue = hiddenInput.value;
+    ensureSessionStarted();
+
+    if (newValue.length >= lastValue.length && newValue.startsWith(lastValue)) {
+      const appended = newValue.slice(lastValue.length);
+      const now = Date.now();
+      for (const ch of appended) {
+        buffer.push({ ch, ts: now });
+        totalTyped++;
+      }
+    } else if (newValue.length < lastValue.length && lastValue.startsWith(newValue)) {
+      const removeCount = lastValue.length - newValue.length;
+      buffer.splice(buffer.length - removeCount, removeCount);
+    } else {
+      // fallback: full resync (paste, mid-edit, select-all replace, etc.)
+      const now = Date.now();
+      buffer = newValue.split('').map(ch => ({ ch, ts: now }));
+      totalTyped += Math.max(0, newValue.length);
+    }
+
+    lastValue = newValue;
+    render();
+  }
+
+  function fadeTick() {
+    const now = Date.now();
+    let removedFromFront = 0;
+    while (buffer.length && (now - buffer[0].ts) > (FADE_START + FADE_DURATION)) {
+      buffer.shift();
+      removedFromFront++;
+    }
+    if (removedFromFront > 0) {
+      const newStr = buffer.map(b => b.ch).join('');
+      hiddenInput.value = newStr;
+      lastValue = newStr;
+      try { hiddenInput.setSelectionRange(newStr.length, newStr.length); } catch (e) {}
+    }
+    render();
+  }
+
+  function render() {
+    const now = Date.now();
+    visibleVal.textContent = buffer.length;
+    totalVal.textContent = totalTyped;
+
+    if (buffer.length === 0) {
+      textDisplay.innerHTML = '';
+      textDisplay.appendChild(placeholderText.cloneNode(true));
+      return;
+    }
+
+    let html = '';
+    for (const item of buffer) {
+      if (item.ch === '\n') {
+        html += '<br>';
+        continue;
+      }
+      const age = now - item.ts;
+      let opacity = 1, blur = 0;
+      if (age > FADE_START) {
+        const t = Math.min(1, (age - FADE_START) / FADE_DURATION);
+        opacity = 1 - t * 0.94;
+        blur = t * 1.6;
+      }
+      html += `<span class="ch" style="opacity:${opacity.toFixed(2)};filter:blur(${blur.toFixed(2)}px)">${escapeHtml(item.ch)}</span>`;
+    }
+    html += '<span class="nib-cursor"></span>';
+    textDisplay.innerHTML = html;
+  }
+
+  function resetAll() {
+    buffer = [];
+    lastValue = "";
+    totalTyped = 0;
+    sessionStart = null;
+    lastInputTime = null;
+    hiddenInput.value = "";
+    elapsedVal.textContent = "0:00";
+    totalVal.textContent = "0";
+    visibleVal.textContent = "0";
+    idleNote.classList.remove('show');
+    if (elapsedTimerHandle) { clearInterval(elapsedTimerHandle); elapsedTimerHandle = null; }
+    render();
+    hiddenInput.focus();
+  }
+
+  paperFrame.addEventListener('click', () => hiddenInput.focus());
+  hiddenInput.addEventListener('input', handleInput);
+  resetBtn.addEventListener('click', resetAll);
+
+  fadeTimerHandle = setInterval(fadeTick, 150);
+
+  render();
+})();
+</script>
+
+</body>
+</html>

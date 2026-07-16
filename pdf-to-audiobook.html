@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page &amp; Voice — PDF to Audiobook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root {
+    --wood: #4a2530;
+    --wood-dark: #341a22;
+    --cream: #f0e6d2;
+    --brass: #c9a227;
+    --brass-bright: #e0bb4a;
+    --amber: #e8935a;
+    --ink: #2b2018;
+    --ink-soft: #6b5d4f;
+    --off: #7a6a72;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--wood-dark);
+    background-image: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent 55%);
+    color: var(--cream);
+    font-family: 'IBM Plex Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 14px 60px;
+  }
+
+  .wrap { width: 100%; max-width: 640px; }
+
+  header { text-align: center; margin-bottom: 20px; }
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(30px, 6vw, 46px);
+    letter-spacing: 4px;
+    margin: 0;
+    color: var(--brass-bright);
+    text-shadow: 2px 2px 0 var(--wood-dark), 0 0 20px rgba(224,187,74,0.25);
+  }
+  header .sub {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #c9b8a0;
+    margin-top: 4px;
+  }
+
+  /* ---------------- Radio cabinet ---------------- */
+  .cabinet {
+    background: var(--wood);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 0 0 2px rgba(255,255,255,0.03);
+  }
+
+  /* Upload state */
+  .upload-zone {
+    border: 2px dashed #7a5560;
+    border-radius: 10px;
+    padding: 46px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--brass-bright);
+    background: rgba(224,187,74,0.06);
+  }
+  .upload-zone .icon { font-size: 34px; margin-bottom: 10px; }
+  .upload-zone .msg {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: #d9cbb8;
+  }
+  .upload-zone .msg strong { color: var(--brass-bright); }
+  #fileInput { display: none; }
+
+  .status-line {
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: #c9b8a0;
+    margin-top: 12px;
+    min-height: 16px;
+  }
+
+  /* Player state (hidden until a PDF loads) */
+  .player { display: none; }
+  .player.show { display: block; }
+
+  .dial-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  .tuner {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #efe2c0, #cbb287 70%, #a68d5f 100%);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.4), inset 0 0 0 4px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+  }
+  .tuner .arc-track {
+    position: absolute;
+    inset: 12px;
+    border-radius: 50%;
+    border: 2px dashed rgba(0,0,0,0.15);
+  }
+  .tuner .needle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 3px;
+    height: 58px;
+    background: var(--wood);
+    transform-origin: 50% 0%;
+    transform: translate(-50%, 0) rotate(-70deg);
+    transition: transform 0.4s cubic-bezier(.4,1.3,.5,1);
+    border-radius: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tuner .needle { transition: none; }
+  }
+  .tuner .hub {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 14px; height: 14px;
+    background: var(--wood);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+  .tuner .page-readout {
+    position: absolute;
+    bottom: 16px;
+    left: 0; right: 0;
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--wood-dark);
+    letter-spacing: 1px;
+  }
+
+  .vu-meter {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 60px;
+  }
+  .vu-meter .bar {
+    width: 8px;
+    background: linear-gradient(to top, var(--brass), var(--amber));
+    height: 10px;
+    border-radius: 2px;
+    transition: height 0.15s ease;
+  }
+  .vu-meter.speaking .bar {
+    animation: vuPulse 0.9s ease-in-out infinite;
+  }
+  .vu-meter .bar:nth-child(1) { animation-delay: 0s; }
+  .vu-meter .bar:nth-child(2) { animation-delay: 0.12s; }
+  .vu-meter .bar:nth-child(3) { animation-delay: 0.24s; }
+  .vu-meter .bar:nth-child(4) { animation-delay: 0.36s; }
+  .vu-meter .bar:nth-child(5) { animation-delay: 0.48s; }
+  @keyframes vuPulse {
+    0%, 100% { height: 10px; }
+    50% { height: 52px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .vu-meter.speaking .bar { animation: none; height: 30px; }
+  }
+
+  .on-air {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-align: center;
+    margin-top: 8px;
+    color: #7a6a72;
+  }
+  .on-air.live { color: var(--amber); }
+
+  /* Controls */
+  .transport {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  button.ctrl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 13px;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 18px;
+    cursor: pointer;
+    background: var(--cream);
+    color: var(--wood-dark);
+    box-shadow: 0 3px 0 #a8916f;
+    transition: transform 0.08s ease;
+  }
+  button.ctrl:active { transform: translateY(3px); box-shadow: none; }
+  button.ctrl:focus-visible { outline: 3px solid var(--brass-bright); outline-offset: 2px; }
+  button.ctrl.primary { background: var(--amber); box-shadow: 0 3px 0 #a85f34; }
+  button.ctrl:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .knobs {
+    display: flex;
+    gap: 22px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+  }
+  .knob-group { text-align: center; }
+  .knob-group label { display: block; margin-bottom: 6px; letter-spacing: 1px; color: #d9cbb8; }
+  .knob-group input[type="range"] { width: 130px; accent-color: var(--brass-bright); }
+  .knob-group select {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    border: none;
+    background: var(--cream);
+    color: var(--wood-dark);
+    max-width: 200px;
+  }
+
+  /* Transcript */
+  .transcript {
+    background: var(--cream);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 16px 18px;
+    max-height: 160px;
+    overflow-y: auto;
+    font-family: 'IBM Plex Sans', serif;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .transcript .sentence { transition: background-color 0.2s ease, color 0.2s ease; padding: 1px 2px; border-radius: 2px; }
+  .transcript .sentence.active { background: var(--amber); color: #fff; }
+
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: #c9b8a0;
+    margin-top: 10px;
+  }
+
+  .load-new {
+    display: block;
+    margin: 16px auto 0;
+    background: transparent;
+    border: 1.5px dashed #7a5560;
+    color: #d9cbb8;
+  }
+  .load-new:hover { border-color: var(--brass-bright); color: var(--brass-bright); }
+
+  @media (max-width: 480px) {
+    .cabinet { padding: 16px; }
+    .dial-row { gap: 16px; }
+    .tuner { width: 120px; height: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>PAGE &amp; VOICE</h1>
+    <div class="sub">tune your pdf into a broadcast</div>
+  </header>
+
+  <div class="cabinet">
+    <div id="uploadZone" class="upload-zone">
+      <div class="icon">📻</div>
+      <div class="msg"><strong>Click to load a PDF</strong><br>or drop it here — read entirely in your browser</div>
+      <input type="file" id="fileInput" accept="application/pdf" />
+    </div>
+    <div class="status-line" id="statusLine"></div>
+
+    <div class="player" id="player">
+      <div class="dial-row">
+        <div class="tuner">
+          <div class="arc-track"></div>
+          <div class="needle" id="needle"></div>
+          <div class="hub"></div>
+          <div class="page-readout" id="pageReadout">1 / 1</div>
+        </div>
+        <div>
+          <div class="vu-meter" id="vuMeter">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+          </div>
+          <div class="on-air" id="onAir">STANDBY</div>
+        </div>
+      </div>
+
+      <div class="transport">
+        <button class="ctrl" id="prevBtn">⏮ Prev Page</button>
+        <button class="ctrl primary" id="playBtn">▶ Play</button>
+        <button class="ctrl" id="stopBtn">⏹ Stop</button>
+        <button class="ctrl" id="nextBtn">⏭ Next Page</button>
+      </div>
+
+      <div class="knobs">
+        <div class="knob-group">
+          <label>Speed <span id="rateVal">1.0×</span></label>
+          <input type="range" id="rateSlider" min="0.5" max="2" step="0.1" value="1" />
+        </div>
+        <div class="knob-group">
+          <label>Pitch <span id="pitchVal">1.0</span></label>
+          <input type="range" id="pitchSlider" min="0.5" max="1.8" step="0.1" value="1" />
+        </div>
+        <div class="knob-group">
+          <label>Voice</label>
+          <select id="voiceSelect"></select>
+        </div>
+      </div>
+
+      <div class="transcript" id="transcript"></div>
+      <div class="meta-row">
+        <span id="fileNameLabel"></span>
+        <span id="pageCountLabel"></span>
+      </div>
+
+      <button class="ctrl load-new" id="loadNewBtn">Load a different PDF</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+  const statusLine = document.getElementById('statusLine');
+  const player = document.getElementById('player');
+  const needle = document.getElementById('needle');
+  const pageReadout = document.getElementById('pageReadout');
+  const vuMeter = document.getElementById('vuMeter');
+  const onAir = document.getElementById('onAir');
+  const playBtn = document.getElementById('playBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const rateSlider = document.getElementById('rateSlider');
+  const rateVal = document.getElementById('rateVal');
+  const pitchSlider = document.getElementById('pitchSlider');
+  const pitchVal = document.getElementById('pitchVal');
+  const voiceSelect = document.getElementById('voiceSelect');
+  const transcript = document.getElementById('transcript');
+  const fileNameLabel = document.getElementById('fileNameLabel');
+  const pageCountLabel = document.getElementById('pageCountLabel');
+  const loadNewBtn = document.getElementById('loadNewBtn');
+
+  let pages = [];          // array of page text strings
+  let sentencesByPage = []; // array of arrays of sentence strings
+  let currentPage = 0;
+  let currentSentence = 0;
+  let isPlaying = false;
+  let isPaused = false;
+  let voices = [];
+
+  const synth = window.speechSynthesis;
+
+  function splitSentences(text) {
+    const cleaned = text.replace(/\s+/g, ' ').trim();
+    if (!cleaned) return [];
+    const matches = cleaned.match(/[^.!?]+[.!?]+(["')\]]*)|[^.!?]+$/g);
+    return matches ? matches.map(s => s.trim()).filter(Boolean) : [cleaned];
+  }
+
+  function populateVoices() {
+    voices = synth.getVoices();
+    voiceSelect.innerHTML = '';
+    voices.forEach((v, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = v.name + (v.lang ? ' (' + v.lang + ')' : '');
+      voiceSelect.appendChild(opt);
+    });
+  }
+
+  if (synth) {
+    populateVoices();
+    synth.onvoiceschanged = populateVoices;
+  }
+
+  // ---------------- File loading ----------------
+  uploadZone.addEventListener('click', () => fileInput.click());
+  uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files && e.target.files[0]) loadFile(e.target.files[0]);
+  });
+
+  function loadFile(file) {
+    if (file.type !== 'application/pdf') {
+      statusLine.textContent = 'Please choose a PDF file.';
+      return;
+    }
+    if (typeof pdfjsLib === 'undefined') {
+      statusLine.textContent = 'PDF engine failed to load — check your internet connection and try again.';
+      return;
+    }
+    statusLine.textContent = 'Reading "' + file.name + '"…';
+    const reader = new FileReader();
+    reader.onload = function (ev) {
+      const arrayBuffer = ev.target.result;
+      pdfjsLib.getDocument({ data: arrayBuffer }).promise.then(async (pdf) => {
+        pages = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          statusLine.textContent = 'Extracting page ' + i + ' of ' + pdf.numPages + '…';
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const text = content.items.map(item => item.str).join(' ');
+          pages.push(text);
+        }
+        sentencesByPage = pages.map(splitSentences);
+        currentPage = 0;
+        currentSentence = 0;
+        fileNameLabel.textContent = file.name;
+        pageCountLabel.textContent = pdf.numPages + ' page' + (pdf.numPages === 1 ? '' : 's');
+        statusLine.textContent = '';
+        uploadZone.style.display = 'none';
+        player.classList.add('show');
+        renderTranscript();
+        updateDial();
+      }).catch((err) => {
+        statusLine.textContent = 'Could not read that PDF: ' + err.message;
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  loadNewBtn.addEventListener('click', () => {
+    stopAll();
+    pages = [];
+    sentencesByPage = [];
+    currentPage = 0;
+    currentSentence = 0;
+    player.classList.remove('show');
+    uploadZone.style.display = 'block';
+    fileInput.value = '';
+    statusLine.textContent = '';
+  });
+
+  // ---------------- Dial / transcript ----------------
+  function updateDial() {
+    const total = pages.length || 1;
+    const frac = total > 1 ? currentPage / (total - 1) : 0;
+    const angle = -70 + frac * 140; // sweep from -70deg to +70deg
+    needle.style.transform = `translate(-50%, 0) rotate(${angle}deg)`;
+    pageReadout.textContent = (currentPage + 1) + ' / ' + total;
+  }
+
+  function renderTranscript() {
+    const sentences = sentencesByPage[currentPage] || [];
+    transcript.innerHTML = sentences
+      .map((s, i) => `<span class="sentence" id="s-${i}">${escapeHtml(s)} </span>`)
+      .join('');
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function highlightSentence(idx) {
+    transcript.querySelectorAll('.sentence').forEach(el => el.classList.remove('active'));
+    const el = document.getElementById('s-' + idx);
+    if (el) {
+      el.classList.add('active');
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }
+
+  // ---------------- Speech playback ----------------
+  function speakCurrentSentence() {
+    if (!synth) {
+      statusLine.textContent = 'Your browser does not support speech synthesis.';
+      return;
+    }
+    const sentences = sentencesByPage[currentPage] || [];
+    if (currentSentence >= sentences.length) {
+      advancePage();
+      return;
+    }
+    highlightSentence(currentSentence);
+    const utter = new SpeechSynthesisUtterance(sentences[currentSentence]);
+    const voiceIdx = voiceSelect.value;
+    if (voices[voiceIdx]) utter.voice = voices[voiceIdx];
+    utter.rate = parseFloat(rateSlider.value);
+    utter.pitch = parseFloat(pitchSlider.value);
+
+    utter.onend = () => {
+      if (!isPlaying) return;
+      currentSentence++;
+      speakCurrentSentence();
+    };
+    utter.onerror = () => {
+      currentSentence++;
+      if (isPlaying) speakCurrentSentence();
+    };
+    synth.speak(utter);
+  }
+
+  function advancePage() {
+    if (currentPage < pages.length - 1) {
+      currentPage++;
+      currentSentence = 0;
+      updateDial();
+      renderTranscript();
+      if (isPlaying) speakCurrentSentence();
+    } else {
+      stopAll();
+      onAir.textContent = 'END OF BROADCAST';
+      onAir.classList.remove('live');
+    }
+  }
+
+  function play() {
+    if (!pages.length) return;
+    if (isPaused && synth.paused) {
+      synth.resume();
+      isPlaying = true;
+      isPaused = false;
+    } else {
+      isPlaying = true;
+      isPaused = false;
+      speakCurrentSentence();
+    }
+    playBtn.textContent = '⏸ Pause';
+    vuMeter.classList.add('speaking');
+    onAir.textContent = 'ON AIR';
+    onAir.classList.add('live');
+  }
+
+  function pause() {
+    isPlaying = false;
+    isPaused = true;
+    if (synth) synth.pause();
+    playBtn.textContent = '▶ Play';
+    vuMeter.classList.remove('speaking');
+    onAir.textContent = 'PAUSED';
+    onAir.classList.remove('live');
+  }
+
+  function stopAll() {
+    isPlaying = false;
+    isPaused = false;
+    if (synth) synth.cancel();
+    playBtn.textContent = '▶ Play';
+    vuMeter.classList.remove('speaking');
+    onAir.textContent = 'STANDBY';
+    onAir.classList.remove('live');
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (isPlaying) pause();
+    else play();
+  });
+
+  stopBtn.addEventListener('click', () => {
+    stopAll();
+    currentSentence = 0;
+    renderTranscript();
+  });
+
+  prevBtn.addEventListener('click', () => {
+    if (currentPage > 0) {
+      const wasPlaying = isPlaying;
+      stopAll();
+      currentPage--;
+      currentSentence = 0;
+      updateDial();
+      renderTranscript();
+      if (wasPlaying) play();
+    }
+  });
+
+  nextBtn.addEventListener('click', () => {
+    if (currentPage < pages.length - 1) {
+      const wasPlaying = isPlaying;
+      stopAll();
+      currentPage++;
+      currentSentence = 0;
+      updateDial();
+      renderTranscript();
+      if (wasPlaying) play();
+    }
+  });
+
+  rateSlider.addEventListener('input', () => { rateVal.textContent = parseFloat(rateSlider.value).toFixed(1) + '×'; });
+  pitchSlider.addEventListener('input', () => { pitchVal.textContent = parseFloat(pitchSlider.value).toFixed(1); });
+})();
+</script>
+
+</body>
+</html>

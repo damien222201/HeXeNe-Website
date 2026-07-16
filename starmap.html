@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STARMAP — GitHub Profile Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --space: #0b0e1a;
+    --space-deep: #060811;
+    --panel: #131829;
+    --panel-border: #232b45;
+    --gold: #c9a227;
+    --gold-bright: #e0bb4a;
+    --star-white: #dbe4ff;
+    --text-light: #dfe4f0;
+    --muted: #7d87a8;
+    --danger: #d16a5a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--space-deep);
+    background-image: radial-gradient(circle at 50% 0%, rgba(201,162,39,0.05), transparent 55%);
+    color: var(--text-light);
+    font-family: 'IBM Plex Mono', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 14px 60px;
+  }
+
+  .wrap { width: 100%; max-width: 820px; }
+
+  header { text-align: center; margin-bottom: 20px; }
+  header h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(28px, 6vw, 40px);
+    letter-spacing: 2px;
+    margin: 0;
+    color: var(--gold-bright);
+  }
+  header .sub {
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* ---------------- Search ---------------- */
+  .search-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .search-row input {
+    flex: 1;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    color: var(--text-light);
+  }
+  .search-row input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .search-row button {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 12px 22px;
+    border: none;
+    border-radius: 6px;
+    background: var(--gold);
+    color: #241804;
+    cursor: pointer;
+  }
+  .search-row button:hover { background: var(--gold-bright); }
+  .search-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .status-msg {
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    min-height: 18px;
+  }
+  .status-msg.error { color: var(--danger); }
+
+  /* ---------------- Profile badge ---------------- */
+  .badge {
+    display: none;
+    background: linear-gradient(160deg, #1b2440, #131829);
+    border: 2px solid var(--gold);
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 22px;
+    box-shadow: 0 20px 45px rgba(0,0,0,0.5);
+  }
+  .badge.show { display: flex; gap: 18px; flex-wrap: wrap; }
+  .badge img {
+    width: 84px; height: 84px;
+    border-radius: 50%;
+    border: 3px solid var(--gold);
+    flex-shrink: 0;
+  }
+  .badge-info { flex: 1; min-width: 200px; }
+  .badge-info .name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--star-white);
+  }
+  .badge-info .login { font-size: 12.5px; color: var(--gold-bright); margin-bottom: 6px; }
+  .badge-info .bio { font-size: 12.5px; color: var(--muted); line-height: 1.6; margin-bottom: 10px; }
+  .badge-meta { display: flex; gap: 16px; flex-wrap: wrap; font-size: 11.5px; color: var(--muted); }
+  .badge-meta span strong { color: var(--star-white); font-size: 14px; display: block; }
+  .badge-info a {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--gold-bright);
+    text-decoration: none;
+    border-bottom: 1px dashed var(--gold-bright);
+  }
+
+  /* ---------------- Star canvas ---------------- */
+  .sky-frame {
+    display: none;
+    background: var(--space);
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+    box-shadow: inset 0 0 40px rgba(0,0,0,0.5);
+    margin-bottom: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .sky-frame.show { display: block; }
+  canvas { display: block; width: 100%; height: auto; cursor: pointer; }
+
+  .sky-caption {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+
+  .repo-detail {
+    display: none;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .repo-detail.show { display: block; }
+  .repo-detail .rd-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--gold-bright); font-size: 15px; }
+  .repo-detail .rd-desc { font-size: 12.5px; color: var(--muted); margin: 6px 0; line-height: 1.6; }
+  .repo-detail .rd-stats { display: flex; gap: 14px; font-size: 11.5px; color: var(--star-white); flex-wrap: wrap; }
+  .repo-detail a { color: var(--gold-bright); font-size: 12px; }
+
+  /* ---------------- Language bar ---------------- */
+  .lang-section { display: none; margin-bottom: 20px; }
+  .lang-section.show { display: block; }
+  .lang-section h3 {
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 8px;
+  }
+  .lang-bar {
+    display: flex;
+    height: 10px;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .lang-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    font-size: 11.5px;
+  }
+  .lang-legend .item { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .lang-legend .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ---------------- Repo list (accessible fallback) ---------------- */
+  .repo-list { display: none; }
+  .repo-list.show { display: block; }
+  .repo-list h3 {
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted);
+    margin: 0 0 10px;
+  }
+  .repo-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--panel-border);
+    font-size: 12.5px;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+  .repo-row:hover { background: var(--panel); }
+  .repo-row .rr-name { color: var(--star-white); font-weight: 600; }
+  .repo-row .rr-lang { color: var(--muted); font-size: 11px; }
+  .repo-row .rr-stars { color: var(--gold-bright); white-space: nowrap; }
+
+  .disclosure {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.7;
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 480px) {
+    .badge { padding: 16px; }
+    .badge img { width: 64px; height: 64px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>STARMAP</h1>
+    <div class="sub">plot a github profile among its stars</div>
+  </header>
+
+  <div class="search-row">
+    <input type="text" id="usernameInput" placeholder="GitHub username (e.g. torvalds)" />
+    <button id="searchBtn">Search</button>
+  </div>
+  <div class="status-msg" id="statusMsg"></div>
+
+  <div class="badge" id="badge">
+    <img id="badgeAvatar" src="" alt="" />
+    <div class="badge-info">
+      <div class="name" id="badgeName"></div>
+      <div class="login" id="badgeLogin"></div>
+      <div class="bio" id="badgeBio"></div>
+      <div class="badge-meta">
+        <span><strong id="badgeRepos">0</strong>repos</span>
+        <span><strong id="badgeFollowers">0</strong>followers</span>
+        <span><strong id="badgeFollowing">0</strong>following</span>
+        <span id="badgeLocation"></span>
+      </div>
+      <a id="badgeLink" href="#" target="_blank" rel="noopener">View on GitHub →</a>
+    </div>
+  </div>
+
+  <div class="sky-frame" id="skyFrame">
+    <canvas id="skyCanvas" width="800" height="360"></canvas>
+  </div>
+  <div class="sky-caption" id="skyCaption"></div>
+
+  <div class="repo-detail" id="repoDetail">
+    <div class="rd-name" id="rdName"></div>
+    <div class="rd-desc" id="rdDesc"></div>
+    <div class="rd-stats">
+      <span id="rdStars"></span>
+      <span id="rdForks"></span>
+      <span id="rdLang"></span>
+    </div>
+    <a id="rdLink" href="#" target="_blank" rel="noopener">Open repository →</a>
+  </div>
+
+  <div class="lang-section" id="langSection">
+    <h3>Primary languages across repos</h3>
+    <div class="lang-bar" id="langBar"></div>
+    <div class="lang-legend" id="langLegend"></div>
+  </div>
+
+  <div class="repo-list" id="repoList">
+    <h3>All repositories (sorted by stars)</h3>
+    <div id="repoRows"></div>
+  </div>
+
+  <div class="disclosure">
+    Uses the public GitHub REST API (no key needed). Unauthenticated requests are limited to 60/hour per IP
+    address by GitHub — if you see a rate-limit message, wait a bit and try again.
+  </div>
+</div>
+
+<script>
+(function () {
+  const usernameInput = document.getElementById('usernameInput');
+  const searchBtn = document.getElementById('searchBtn');
+  const statusMsg = document.getElementById('statusMsg');
+  const badge = document.getElementById('badge');
+  const badgeAvatar = document.getElementById('badgeAvatar');
+  const badgeName = document.getElementById('badgeName');
+  const badgeLogin = document.getElementById('badgeLogin');
+  const badgeBio = document.getElementById('badgeBio');
+  const badgeRepos = document.getElementById('badgeRepos');
+  const badgeFollowers = document.getElementById('badgeFollowers');
+  const badgeFollowing = document.getElementById('badgeFollowing');
+  const badgeLocation = document.getElementById('badgeLocation');
+  const badgeLink = document.getElementById('badgeLink');
+  const skyFrame = document.getElementById('skyFrame');
+  const skyCanvas = document.getElementById('skyCanvas');
+  const skyCaption = document.getElementById('skyCaption');
+  const repoDetail = document.getElementById('repoDetail');
+  const rdName = document.getElementById('rdName');
+  const rdDesc = document.getElementById('rdDesc');
+  const rdStars = document.getElementById('rdStars');
+  const rdForks = document.getElementById('rdForks');
+  const rdLang = document.getElementById('rdLang');
+  const rdLink = document.getElementById('rdLink');
+  const langSection = document.getElementById('langSection');
+  const langBar = document.getElementById('langBar');
+  const langLegend = document.getElementById('langLegend');
+  const repoList = document.getElementById('repoList');
+  const repoRows = document.getElementById('repoRows');
+
+  const ctx = skyCanvas.getContext('2d');
+  const W = skyCanvas.width, H = skyCanvas.height;
+
+  const LANG_COLORS = {
+    JavaScript: '#f1e05a', TypeScript: '#3178c6', Python: '#3572A5', Java: '#b07219',
+    'C++': '#f34b7d', C: '#555555', 'C#': '#178600', PHP: '#4F5D95', Ruby: '#701516',
+    Go: '#00ADD8', Rust: '#dea584', Swift: '#F05138', Kotlin: '#A97BFF', HTML: '#e34c26',
+    CSS: '#563d7c', Shell: '#89e051', Vue: '#41b883', Dart: '#00B4AB', Scala: '#c22d40',
+    Jupyter_Notebook: '#DA5B0B', 'Objective-C': '#438eff', Lua: '#000080', Perl: '#0298c3',
+    Haskell: '#5e5086', R: '#198CE7', Elixir: '#6e4a7e', Clojure: '#db5855'
+  };
+  function langColor(lang) {
+    return LANG_COLORS[lang] || '#5a6478';
+  }
+
+  let backgroundStars = [];
+  let repoStars = [];
+  let hoveredRepo = null;
+
+  function initBackgroundStars() {
+    backgroundStars = [];
+    for (let i = 0; i < 90; i++) {
+      backgroundStars.push({
+        x: Math.random() * W, y: Math.random() * H,
+        r: Math.random() * 1.2 + 0.3,
+        tw: Math.random() * Math.PI * 2
+      });
+    }
+  }
+
+  function setStatus(msg, isError) {
+    statusMsg.textContent = msg;
+    statusMsg.classList.toggle('error', !!isError);
+  }
+
+  async function searchUser() {
+    const username = usernameInput.value.trim();
+    if (!username) { setStatus('Enter a GitHub username.', true); return; }
+
+    searchBtn.disabled = true;
+    setStatus('Looking up ' + username + '…');
+    badge.classList.remove('show');
+    skyFrame.classList.remove('show');
+    langSection.classList.remove('show');
+    repoList.classList.remove('show');
+    repoDetail.classList.remove('show');
+
+    try {
+      const userResp = await fetch('https://api.github.com/users/' + encodeURIComponent(username));
+      if (userResp.status === 404) {
+        setStatus('No GitHub user found with that username.', true);
+        searchBtn.disabled = false;
+        return;
+      }
+      if (userResp.status === 403) {
+        setStatus('GitHub rate limit reached for this network (60 unauthenticated requests/hour). Try again later.', true);
+        searchBtn.disabled = false;
+        return;
+      }
+      if (!userResp.ok) {
+        setStatus('GitHub API error: ' + userResp.status, true);
+        searchBtn.disabled = false;
+        return;
+      }
+      const user = await userResp.json();
+
+      const reposResp = await fetch('https://api.github.com/users/' + encodeURIComponent(username) + '/repos?sort=updated&per_page=100');
+      let repos = [];
+      if (reposResp.ok) {
+        repos = await reposResp.json();
+      }
+
+      renderBadge(user);
+      renderSky(repos);
+      renderLanguages(repos);
+      renderRepoList(repos);
+      setStatus('Showing ' + repos.length + ' repositories for ' + user.login + '.');
+    } catch (err) {
+      setStatus('Network error: ' + err.message, true);
+    }
+    searchBtn.disabled = false;
+  }
+
+  function renderBadge(user) {
+    badgeAvatar.src = user.avatar_url;
+    badgeAvatar.alt = user.login + ' avatar';
+    badgeName.textContent = user.name || user.login;
+    badgeLogin.textContent = '@' + user.login;
+    badgeBio.textContent = user.bio || '';
+    badgeRepos.textContent = user.public_repos;
+    badgeFollowers.textContent = user.followers;
+    badgeFollowing.textContent = user.following;
+    badgeLocation.textContent = user.location || '';
+    badgeLink.href = user.html_url;
+    badge.classList.add('show');
+  }
+
+  function renderSky(repos) {
+    repoStars = [];
+    const withStars = repos.filter(r => !r.fork);
+    const maxStars = Math.max(1, ...withStars.map(r => r.stargazers_count));
+
+    withStars.forEach((repo, i) => {
+      // deterministic pseudo-random layout based on index so it doesn't jump around
+      const seed = (i * 137.5) % 360;
+      const x = 40 + ((Math.sin(seed) + 1) / 2) * (W - 80);
+      const y = 30 + ((Math.cos(seed * 1.7) + 1) / 2) * (H - 60);
+      const sizeFactor = Math.sqrt(repo.stargazers_count / maxStars);
+      const radius = 3 + sizeFactor * 14;
+      repoStars.push({ x, y, radius, repo });
+    });
+
+    skyFrame.classList.add('show');
+    skyCaption.textContent = withStars.length
+      ? 'Star size reflects GitHub stargazers. Click or tap a star for details.'
+      : 'This user has no original (non-fork) repositories to plot.';
+    drawSky();
+  }
+
+  function drawSky() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#0b0e1a';
+    ctx.fillRect(0, 0, W, H);
+
+    const t = Date.now() / 1000;
+    for (const s of backgroundStars) {
+      const alpha = 0.3 + Math.sin(t + s.tw) * 0.25;
+      ctx.fillStyle = `rgba(219,228,255,${Math.max(0.08, alpha).toFixed(2)})`;
+      ctx.fillRect(s.x, s.y, s.r, s.r);
+    }
+
+    for (const star of repoStars) {
+      const isHovered = hoveredRepo === star.repo;
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+      ctx.fillStyle = isHovered ? '#ffd166' : '#dbe4ff';
+      ctx.shadowColor = isHovered ? 'rgba(255,209,102,0.9)' : 'rgba(219,228,255,0.5)';
+      ctx.shadowBlur = isHovered ? 18 : 8;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      if (star.radius > 8 || isHovered) {
+        ctx.fillStyle = isHovered ? '#ffd166' : '#9aa8cc';
+        ctx.font = '11px IBM Plex Mono, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(star.repo.name, star.x, star.y - star.radius - 6);
+      }
+    }
+  }
+
+  function findStarAt(canvasX, canvasY) {
+    let closest = null, closestDist = Infinity;
+    for (const star of repoStars) {
+      const d = Math.hypot(star.x - canvasX, star.y - canvasY);
+      if (d <= Math.max(star.radius, 10) && d < closestDist) {
+        closest = star; closestDist = d;
+      }
+    }
+    return closest;
+  }
+
+  function canvasCoords(evt) {
+    const rect = skyCanvas.getBoundingClientRect();
+    const scaleX = W / rect.width, scaleY = H / rect.height;
+    const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+    const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  }
+
+  skyCanvas.addEventListener('mousemove', (evt) => {
+    const { x, y } = canvasCoords(evt);
+    const star = findStarAt(x, y);
+    hoveredRepo = star ? star.repo : null;
+    skyCanvas.style.cursor = star ? 'pointer' : 'default';
+  });
+
+  skyCanvas.addEventListener('click', (evt) => {
+    const { x, y } = canvasCoords(evt);
+    const star = findStarAt(x, y);
+    if (star) showRepoDetail(star.repo);
+  });
+
+  function showRepoDetail(repo) {
+    rdName.textContent = repo.name;
+    rdDesc.textContent = repo.description || 'No description provided.';
+    rdStars.textContent = '★ ' + repo.stargazers_count;
+    rdForks.textContent = '⑂ ' + repo.forks_count;
+    rdLang.textContent = repo.language || 'Unknown language';
+    rdLink.href = repo.html_url;
+    repoDetail.classList.add('show');
+  }
+
+  function renderLanguages(repos) {
+    const counts = {};
+    repos.forEach(r => {
+      if (!r.language) return;
+      counts[r.language] = (counts[r.language] || 0) + 1;
+    });
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    if (!total) { langSection.classList.remove('show'); return; }
+
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    langBar.innerHTML = sorted.map(([lang, count]) => {
+      const pct = (count / total * 100).toFixed(1);
+      return `<div style="width:${pct}%; background:${langColor(lang)};" title="${lang}: ${pct}%"></div>`;
+    }).join('');
+    langLegend.innerHTML = sorted.map(([lang, count]) => {
+      const pct = (count / total * 100).toFixed(1);
+      return `<div class="item"><span class="dot" style="background:${langColor(lang)}"></span>${lang} (${pct}%)</div>`;
+    }).join('');
+    langSection.classList.add('show');
+  }
+
+  function escapeHtml(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function renderRepoList(repos) {
+    const sorted = [...repos].sort((a, b) => b.stargazers_count - a.stargazers_count);
+    if (!sorted.length) { repoList.classList.remove('show'); return; }
+    repoRows.innerHTML = sorted.map(r => `
+      <div class="repo-row" data-url="${escapeHtml(r.html_url)}">
+        <div>
+          <div class="rr-name">${escapeHtml(r.name)}${r.fork ? ' (fork)' : ''}</div>
+          <div class="rr-lang">${escapeHtml(r.language || 'Unknown')}</div>
+        </div>
+        <div class="rr-stars">★ ${r.stargazers_count}</div>
+      </div>
+    `).join('');
+    repoList.classList.add('show');
+
+    repoRows.querySelectorAll('.repo-row').forEach((row, i) => {
+      row.addEventListener('click', () => showRepoDetail(sorted[i]));
+    });
+  }
+
+  searchBtn.addEventListener('click', searchUser);
+  usernameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchUser(); });
+
+  initBackgroundStars();
+  drawSky();
+  setInterval(drawSky, 200);
+})();
+</script>
+
+</body>
+</html>

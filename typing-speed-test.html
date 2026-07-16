@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Type-O-Meter — Typing Speed Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #e4dfc8;
+    --paper-shadow: #cfc9ac;
+    --ink: #23221e;
+    --ink-faded: #8b8672;
+    --ribbon-black: #1b1a18;
+    --ribbon-red: #9c2b2b;
+    --ribbon-red-bright: #c23e3e;
+    --correction: #2e5c55;
+    --paper-edge: #b7b096;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+  }
+
+  body {
+    background: var(--ribbon-black);
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.03), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(255,255,255,0.02), transparent 40%);
+    color: var(--paper);
+    font-family: 'IBM Plex Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 32px 16px 64px;
+  }
+
+  .machine {
+    width: 100%;
+    max-width: 780px;
+  }
+
+  /* ---------- Header / Ribbon spool assembly ---------- */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 6px;
+  }
+
+  .spool {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 3px solid var(--paper);
+    background:
+      radial-gradient(circle at center, var(--ribbon-black) 0 6px, transparent 7px),
+      repeating-conic-gradient(var(--paper) 0deg 15deg, transparent 15deg 30deg);
+    opacity: 0.85;
+    flex-shrink: 0;
+    animation: spin 6s linear infinite;
+  }
+  .spool.right { animation-direction: reverse; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spool { animation: none; }
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  h1 {
+    font-family: 'Special Elite', cursive;
+    font-size: clamp(28px, 5vw, 42px);
+    letter-spacing: 2px;
+    margin: 0;
+    text-align: center;
+    text-shadow: 2px 2px 0 var(--ribbon-red);
+  }
+
+  .tagline {
+    text-align: center;
+    color: var(--ink-faded);
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin: 4px 0 28px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ---------- Ribbon progress bar (signature element) ---------- */
+  .ribbon-track {
+    position: relative;
+    height: 14px;
+    border-radius: 7px;
+    background: #0f0e0d;
+    overflow: hidden;
+    margin-bottom: 28px;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+  }
+
+  .ribbon-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--ribbon-black) 0%, var(--ribbon-red) 100%);
+    transition: width 0.15s ease-out;
+    position: relative;
+  }
+
+  .ribbon-fill::after {
+    content: "";
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 6px;
+    background: var(--ribbon-red-bright);
+    box-shadow: 0 0 8px 1px var(--ribbon-red-bright);
+  }
+
+  /* ---------- Paper sheet ---------- */
+  .paper {
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 3px;
+    padding: 36px 32px 28px;
+    box-shadow:
+      0 1px 0 var(--paper-edge),
+      0 18px 40px rgba(0,0,0,0.45),
+      inset 0 0 0 1px rgba(0,0,0,0.05);
+    position: relative;
+    cursor: text;
+    min-height: 180px;
+  }
+
+  .paper::before {
+    /* torn top edge */
+    content: "";
+    position: absolute;
+    top: -1px; left: 0; right: 0;
+    height: 6px;
+    background:
+      linear-gradient(115deg, transparent 48%, var(--ribbon-black) 49%, var(--ribbon-black) 51%, transparent 52%) 0 0/14px 6px repeat-x;
+    opacity: 0.15;
+  }
+
+  .passage {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(17px, 2.4vw, 21px);
+    line-height: 1.9;
+    letter-spacing: 0.2px;
+    user-select: none;
+  }
+
+  .passage span { position: relative; }
+  .passage .correct { color: var(--correction); }
+  .passage .incorrect {
+    color: var(--ribbon-red);
+    text-decoration: underline wavy var(--ribbon-red);
+    text-decoration-thickness: 1.5px;
+  }
+  .passage .pending { color: var(--ink-faded); }
+
+  .passage .cursor {
+    outline: 2px solid var(--ribbon-red);
+    border-radius: 2px;
+    animation: blink 1s step-end infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .passage .cursor { animation: none; background: rgba(156,43,43,0.25); }
+  }
+  @keyframes blink {
+    0%, 100% { outline-color: var(--ribbon-red); }
+    50% { outline-color: transparent; }
+  }
+
+  .hidden-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+    height: 0;
+    width: 0;
+  }
+
+  .hint {
+    margin-top: 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-faded);
+    text-align: center;
+  }
+
+  /* ---------- Teletype stats strip ---------- */
+  .receipt {
+    margin-top: 24px;
+    background: var(--ribbon-black);
+    border-radius: 3px;
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  .stat { text-align: center; min-width: 80px; }
+  .stat .value {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--paper);
+    display: block;
+  }
+  .stat .label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+  }
+
+  /* ---------- Controls ---------- */
+  .controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  button.lever {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    background: var(--paper);
+    color: var(--ribbon-black);
+    border: none;
+    border-radius: 2px;
+    padding: 12px 22px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--paper-edge);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  button.lever:hover { background: #f0ecd9; }
+  button.lever:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 var(--paper-edge);
+  }
+  button.lever:focus-visible {
+    outline: 3px solid var(--ribbon-red-bright);
+    outline-offset: 2px;
+  }
+  button.lever.primary {
+    background: var(--ribbon-red);
+    color: var(--paper);
+    box-shadow: 0 3px 0 #6e1f1f;
+  }
+  button.lever.primary:hover { background: var(--ribbon-red-bright); }
+
+  /* ---------- Results overlay (torn receipt) ---------- */
+  .results {
+    display: none;
+    margin-top: 24px;
+    background: var(--paper);
+    color: var(--ink);
+    padding: 28px 32px;
+    border-radius: 3px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+    font-family: 'IBM Plex Mono', monospace;
+    text-align: center;
+  }
+  .results.show { display: block; }
+  .results h2 {
+    font-family: 'Special Elite', cursive;
+    font-size: 22px;
+    margin: 0 0 16px;
+    letter-spacing: 1px;
+  }
+  .results .grid {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .results .grid .value { font-size: 30px; font-weight: 700; }
+  .results .grid .label {
+    font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-faded);
+  }
+
+  @media (max-width: 480px) {
+    .paper { padding: 26px 18px 20px; }
+    .receipt { padding: 14px 12px; gap: 8px; }
+    .stat { min-width: 64px; }
+    .stat .value { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="machine">
+  <div class="header">
+    <div class="spool"></div>
+    <h1>TYPE-O-METER</h1>
+    <div class="spool right"></div>
+  </div>
+  <div class="tagline">A ribbon wears thin with every word</div>
+
+  <div class="ribbon-track" aria-hidden="true">
+    <div class="ribbon-fill" id="ribbonFill"></div>
+  </div>
+
+  <div class="paper" id="paperArea">
+    <div class="passage" id="passage" tabindex="0" aria-label="Typing passage, click to focus and start typing"></div>
+    <textarea class="hidden-input" id="hiddenInput" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+  </div>
+  <div class="hint" id="hint">Click the paper and start typing. The clock starts on your first keystroke.</div>
+
+  <div class="receipt">
+    <div class="stat"><span class="value" id="liveWpm">0</span><span class="label">WPM</span></div>
+    <div class="stat"><span class="value" id="liveAcc">100%</span><span class="label">Accuracy</span></div>
+    <div class="stat"><span class="value" id="liveTime">0.0s</span><span class="label">Elapsed</span></div>
+    <div class="stat"><span class="value" id="liveErrors">0</span><span class="label">Errors</span></div>
+  </div>
+
+  <div class="results" id="results">
+    <h2>— TEST COMPLETE —</h2>
+    <div class="grid">
+      <div><span class="value" id="finalWpm">0</span><br><span class="label">WPM</span></div>
+      <div><span class="value" id="finalAcc">0%</span><br><span class="label">Accuracy</span></div>
+      <div><span class="value" id="finalTime">0.0s</span><br><span class="label">Time</span></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="lever" id="newPassageBtn">⏎ New Passage</button>
+    <button class="lever primary" id="restartBtn">↺ Retry Same Text</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const PASSAGES = [
+    "The old typewriter clattered through the night, each key strike a small percussion in an empty room.",
+    "Good writing is rewriting; the first draft is only clay waiting for a patient hand to shape it.",
+    "A steady rhythm beats a fast burst. Consistent practice will outrun raw talent every single time.",
+    "Somewhere between the margin and the bell, a sentence finds its footing and starts to breathe.",
+    "Correction fluid dries pale and thin, a small white scar where an error used to live.",
+    "The fastest typists rarely look down; their fingers have already memorized the terrain of the keys.",
+    "Ink fades slower than memory, but faster than the habit of reaching for a pen that is not there.",
+    "Every carriage return is a small decision: stop here, or let the thought keep running to the edge.",
+    "Practice does not make perfect, it makes permanent, so practice the version you want to keep.",
+    "A blank page is not empty, it is simply waiting for the first word to prove it wrong."
+  ];
+
+  const passageEl = document.getElementById('passage');
+  const hiddenInput = document.getElementById('hiddenInput');
+  const paperArea = document.getElementById('paperArea');
+  const ribbonFill = document.getElementById('ribbonFill');
+  const hint = document.getElementById('hint');
+
+  const liveWpm = document.getElementById('liveWpm');
+  const liveAcc = document.getElementById('liveAcc');
+  const liveTime = document.getElementById('liveTime');
+  const liveErrors = document.getElementById('liveErrors');
+
+  const results = document.getElementById('results');
+  const finalWpm = document.getElementById('finalWpm');
+  const finalAcc = document.getElementById('finalAcc');
+  const finalTime = document.getElementById('finalTime');
+
+  const newPassageBtn = document.getElementById('newPassageBtn');
+  const restartBtn = document.getElementById('restartBtn');
+
+  let target = "";
+  let startTime = null;
+  let timerHandle = null;
+  let totalKeystrokes = 0;
+  let errorKeystrokes = 0;
+  let finished = false;
+
+  function pickPassage(excludeCurrent) {
+    let choice;
+    do {
+      choice = PASSAGES[Math.floor(Math.random() * PASSAGES.length)];
+    } while (choice === excludeCurrent && PASSAGES.length > 1);
+    return choice;
+  }
+
+  function renderPassage() {
+    passageEl.innerHTML = target
+      .split("")
+      .map((ch, i) => `<span class="pending" data-i="${i}">${ch === " " ? "&nbsp;" : escapeHtml(ch)}</span>`)
+      .join("");
+  }
+
+  function escapeHtml(ch) {
+    return ch.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function loadNewPassage() {
+    target = pickPassage(target);
+    resetState();
+    renderPassage();
+    updateCursor();
+  }
+
+  function resetState() {
+    startTime = null;
+    totalKeystrokes = 0;
+    errorKeystrokes = 0;
+    finished = false;
+    hiddenInput.value = "";
+    ribbonFill.style.width = "0%";
+    liveWpm.textContent = "0";
+    liveAcc.textContent = "100%";
+    liveTime.textContent = "0.0s";
+    liveErrors.textContent = "0";
+    results.classList.remove("show");
+    hint.textContent = "Click the paper and start typing. The clock starts on your first keystroke.";
+    if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+  }
+
+  function updateCursor() {
+    const spans = passageEl.querySelectorAll("span");
+    spans.forEach(s => s.classList.remove("cursor"));
+    const typed = hiddenInput.value;
+    if (typed.length < target.length) {
+      const el = passageEl.querySelector(`span[data-i="${typed.length}"]`);
+      if (el) el.classList.add("cursor");
+    }
+  }
+
+  function startTimerIfNeeded() {
+    if (startTime === null) {
+      startTime = performance.now();
+      timerHandle = setInterval(tick, 100);
+      hint.textContent = "Typing… good rhythm.";
+    }
+  }
+
+  function tick() {
+    if (finished) return;
+    const elapsed = (performance.now() - startTime) / 1000;
+    liveTime.textContent = elapsed.toFixed(1) + "s";
+    const typed = hiddenInput.value;
+    const correctCount = countCorrect(typed);
+    const minutes = elapsed / 60;
+    const wpm = minutes > 0 ? Math.round((correctCount / 5) / minutes) : 0;
+    liveWpm.textContent = String(Math.max(0, wpm));
+  }
+
+  function countCorrect(typed) {
+    let c = 0;
+    for (let i = 0; i < typed.length; i++) {
+      if (typed[i] === target[i]) c++;
+    }
+    return c;
+  }
+
+  function handleInput() {
+    let typed = hiddenInput.value;
+
+    // Prevent typing past the passage length
+    if (typed.length > target.length) {
+      typed = typed.slice(0, target.length);
+      hiddenInput.value = typed;
+    }
+
+    startTimerIfNeeded();
+
+    const spans = passageEl.querySelectorAll("span");
+    let errorsNow = 0;
+    for (let i = 0; i < target.length; i++) {
+      const span = spans[i];
+      span.classList.remove("correct", "incorrect", "pending");
+      if (i < typed.length) {
+        if (typed[i] === target[i]) {
+          span.classList.add("correct");
+        } else {
+          span.classList.add("incorrect");
+          errorsNow++;
+        }
+      } else {
+        span.classList.add("pending");
+      }
+    }
+
+    totalKeystrokes = typed.length;
+    errorKeystrokes = errorsNow;
+    const acc = totalKeystrokes > 0 ? Math.round(((totalKeystrokes - errorsNow) / totalKeystrokes) * 100) : 100;
+    liveAcc.textContent = acc + "%";
+    liveErrors.textContent = String(errorsNow);
+
+    ribbonFill.style.width = Math.min(100, (typed.length / target.length) * 100) + "%";
+
+    updateCursor();
+
+    if (typed.length === target.length) {
+      finishTest();
+    }
+  }
+
+  function finishTest() {
+    if (finished) return;
+    finished = true;
+    if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+    const elapsed = Math.max(0.1, (performance.now() - startTime) / 1000);
+    const typed = hiddenInput.value;
+    const correctCount = countCorrect(typed);
+    const minutes = elapsed / 60;
+    const wpm = Math.round((correctCount / 5) / minutes);
+    const acc = Math.round((correctCount / typed.length) * 100);
+
+    finalWpm.textContent = String(wpm);
+    finalAcc.textContent = acc + "%";
+    finalTime.textContent = elapsed.toFixed(1) + "s";
+    results.classList.add("show");
+    hint.textContent = "Done. Try a new passage or retry this one.";
+  }
+
+  paperArea.addEventListener("click", () => hiddenInput.focus());
+  passageEl.addEventListener("click", () => hiddenInput.focus());
+  hiddenInput.addEventListener("input", handleInput);
+  hiddenInput.addEventListener("keydown", (e) => {
+    // Block newline/tab from doing anything odd in the textarea
+    if (e.key === "Tab") e.preventDefault();
+  });
+
+  newPassageBtn.addEventListener("click", () => {
+    loadNewPassage();
+    hiddenInput.focus();
+  });
+
+  restartBtn.addEventListener("click", () => {
+    resetState();
+    renderPassage();
+    updateCursor();
+    hiddenInput.focus();
+  });
+
+  // init
+  target = pickPassage(null);
+  renderPassage();
+  updateCursor();
+  window.addEventListener("load", () => hiddenInput.focus());
+})();
+</script>
+
+</body>
+</html>
